@@ -8,3 +8,4 @@ requests-oauthlib==1.3.0
 six==1.15.0
 urllib3==1.26.2
 jgrapht==1.5.0.3
+stellargraph==1.2.1
