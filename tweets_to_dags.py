@@ -33,7 +33,7 @@ def run(args):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        epilog="Example: python tweets_to_graph.py --input-dir raw_data --output-file tweets_graph.json"
+        epilog="Example: python tweets_to_dags.py"
     )
     parser.add_argument(
         "--input-tweets-dir",
