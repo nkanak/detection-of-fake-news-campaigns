@@ -1,6 +1,7 @@
 
 from datetime import datetime
 
+import random
 import jgrapht
 
 from models import (
@@ -15,13 +16,22 @@ def _find_retweet_source(dataset: Dataset, retweet, previous_retweets):
     retweet it originated.
     """
 
-    # FIXME
-    # Check if text contains RT @ 
+    user = retweet.user
+
+    # FIXME: Check if text contains RT @ 
+
     # Check if we follow some of the previous users that retweeted
-    # Assign to most popular based on preferential attachment
+    candidates = []
+    for rt in previous_retweets:
+        if user.id in rt.user.followers:
+            candidates.append(rt)
 
-    pass
+    if len(candidates) != 0:
+        return max(candidates, key= lambda k: rt.user.popularity)
 
+    # Assign to most popular based on popularity
+    weights = [rt.user.popularity for rt in previous_retweets]
+    return random.choices(previous_retweets, weights=weights, k=1)[0]
 
 
 def create_dag(dataset: Dataset, tweet_id: str, min_retweets=5): 
@@ -34,26 +44,24 @@ def create_dag(dataset: Dataset, tweet_id: str, min_retweets=5):
     if len(tweet.retweeted_by) < min_retweets:
         return None
 
-    print('-------------- new dag -----------------')
     retweets = sorted(
         tweet.retweeted_by, key=lambda t: t.created_at, reverse=True
     )
 
     dag = jgrapht.create_graph(directed=True, any_hashable=True)
-    dag.add_vertex(tweet)
+    dag.add_vertex(vertex=tweet)
 
     previous = []
     previous.append(tweet)
 
     while len(retweets) != 0: 
         cur = retweets.pop()
+        dag.add_vertex(vertex=cur)
+
         cur_retweet_of = _find_retweet_source(dataset, cur, previous)
+        dag.add_edge(cur, cur_retweet_of)
 
-        # FIXME
-
-        pass
-
-    # FIXME !
+        previous.append(cur)
     
     return dag
 

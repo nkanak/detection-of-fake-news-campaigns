@@ -118,6 +118,10 @@ class User:
     def screenname(self, value):
         self._screenname = value
 
+    @property
+    def popularity(self):
+        return len(self._followers)
+
     def __repr__(self):
         return "User(%r)" % self._id
     
@@ -194,6 +198,8 @@ class Dataset:
         else: 
             user = User(userid)
             self._users_by_id[userid] = user
+
+        tweet.user = user
 
         screenname = tweet_dict.get('screenname', None)
         if screenname is not None: 

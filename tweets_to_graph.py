@@ -21,17 +21,14 @@ def run(args):
     print('Loading tweets from: {}'.format(args.input_tweets_dir))
     dataset.load_tweets(args.input_tweets_dir)
 
-    #print(dataset.users_by_id)
-    #print(dataset.tweets_by_id)
-    #print(dataset)
+    if not os.path.exists(args.output_dags_dir):
+        os.makedirs(args.output_dags_dir)
 
-    dags = [dag for dag in create_dags(dataset)]
-    print('Created {} dags'.format(len(dags)))
-    for d in dags: 
-        print(d)
+    print('Writing dags to: {}'.format(args.output_dags_dir))
+    for i, dag in enumerate(create_dags(dataset)):
+        dag_path = os.path.join(args.output_dags_dir, 'dag-{}.json'.format(i))
+        write_json(dag, dag_path)
 
-    #write_json(g, args.output_file)
-    #print("Wrote graph as json file: {}".format(args.output_file))
 
 if __name__ == "__main__":
 
@@ -53,11 +50,11 @@ if __name__ == "__main__":
         default="raw_data/followers"
     )
     parser.add_argument(
-        "--output-file",
-        help="Output filename to export the graph",
-        dest="output_file",
+        "--output-dags-dir",
+        help="Output directory to exports the dags",
+        dest="output_dags_dir",
         type=str,
-        default="tweets_graph.json"
+        default="raw_data/dags"
     )
     args = parser.parse_args()
     run(args)
