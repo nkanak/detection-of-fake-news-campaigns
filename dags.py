@@ -17,6 +17,7 @@ def _lookup_RT(text):
         return match.group(1)
     return None
 
+
 def _find_retweet_source(dataset: Dataset, retweet, previous_retweets):
     """Given a retweet and all previous retweers estimate from which 
     retweet it originated.
@@ -80,6 +81,27 @@ def create_dag(dataset: Dataset, tweet_id: str, min_retweets=5):
     return dag
 
 
+def postprocess_dag(dataset: Dataset, dag): 
+    """Given a dag convert vertices to integers and compute features.
+    """
+    p_dag = jgrapht.create_graph(directed=True, any_hashable=True)
+
+    vid = 0
+    tweet_to_id = {}
+    for tweet in dag.vertices: 
+        p_dag.add_vertex(vertex=vid)
+        tweet_to_id[tweet] = vid
+        vid += 1
+        
+    for e in dag.edges: 
+        u = dag.edge_source(e)
+        v = dag.edge_target(e)
+
+        p_dag.add_edge(tweet_to_id[u], tweet_to_id[v])
+
+    return p_dag
+
+
 def create_dags(dataset: Dataset, min_retweets=5): 
     """Given a dataset create all dags
     """
@@ -88,6 +110,6 @@ def create_dags(dataset: Dataset, min_retweets=5):
         if not tweet.is_retweet:
             dag = create_dag(dataset, tweet.id, min_retweets=min_retweets)
             if dag is not None:
-                yield dag
+                yield postprocess_dag(dataset, dag)
 
 
