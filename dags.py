@@ -65,6 +65,7 @@ def create_dag(dataset: Dataset, tweet_id: str, min_retweets=5):
 
     dag = jgrapht.create_graph(directed=True, any_hashable=True)
     dag.add_vertex(vertex=tweet)
+    dag.vertex_attrs[tweet]['delay'] = 0
 
     previous = []
     previous.append(tweet)
@@ -75,6 +76,8 @@ def create_dag(dataset: Dataset, tweet_id: str, min_retweets=5):
 
         cur_retweet_of = _find_retweet_source(dataset, cur, previous)
         dag.add_edge(cur, cur_retweet_of)
+
+        dag.vertex_attrs[cur]['delay'] = abs((cur.created_at-cur_retweet_of.created_at).total_seconds())
 
         previous.append(cur)
     
@@ -92,18 +95,20 @@ def postprocess_dag(dataset: Dataset, dag):
         p_dag.add_vertex(vertex=vid)
         p_dag.vertex_attrs[vid]['followers'] = len(tweet.user.followers)
         p_dag.vertex_attrs[vid]['following'] = len(tweet.user.following)
+        p_dag.vertex_attrs[vid]['delay'] = dag.vertex_attrs[tweet]['delay']
 
         # TODO: add more features
         
         tweet_to_id[tweet] = vid
         vid += 1
-
         
     for e in dag.edges: 
         u = dag.edge_source(e)
         v = dag.edge_target(e)
 
         p_dag.add_edge(tweet_to_id[u], tweet_to_id[v])
+
+
 
     return p_dag
 
