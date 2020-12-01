@@ -90,8 +90,14 @@ def postprocess_dag(dataset: Dataset, dag):
     tweet_to_id = {}
     for tweet in dag.vertices: 
         p_dag.add_vertex(vertex=vid)
+        p_dag.vertex_attrs[vid]['followers'] = len(tweet.user.followers)
+        p_dag.vertex_attrs[vid]['following'] = len(tweet.user.following)
+
+        # TODO: add more features
+        
         tweet_to_id[tweet] = vid
         vid += 1
+
         
     for e in dag.edges: 
         u = dag.edge_source(e)
