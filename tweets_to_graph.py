@@ -14,8 +14,11 @@ from models import Dataset
 
 def run(args):
 
+    print('Loading dataset')
     dataset = Dataset()
+    print('Loading users and followers from: {}'.format(args.input_followers_dir))
     dataset.load_users_and_followers(args.input_followers_dir)
+    print('Loading tweets from: {}'.format(args.input_tweets_dir))
     dataset.load_tweets(args.input_tweets_dir)
     #print(dataset.users_by_id)
     #print(dataset.tweets_by_id)

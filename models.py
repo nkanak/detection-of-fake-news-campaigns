@@ -2,6 +2,7 @@
 import os
 import json
 
+from datetime import datetime
 
 TWEET_ATTRS = {
     "id_str": "id",
@@ -39,6 +40,7 @@ class Tweet:
         self._created_at = None
         self._text = None
         self._retweet_of = None
+        self._retweeted_by = []
 
     @property
     def id(self):
@@ -69,12 +71,20 @@ class Tweet:
         self._user = value
 
     @property
+    def is_retweet(self):
+        return self._retweet_of is not None
+
+    @property
     def retweet_of(self):
         return self._retweet_of
 
     @retweet_of.setter
     def retweet_of(self, value):
         self._retweet_of = value
+
+    @property
+    def retweeted_by(self):
+        return self._retweeted_by
 
     def __repr__(self):
         return "Tweet(%r)" % self._id
@@ -114,8 +124,9 @@ class User:
 
 
 
-class Dataset: 
-
+class Dataset:
+    """A dataset model.
+    """
     def __init__(self):
         self._users_by_id = {}
         self._users_by_username = {}
@@ -150,7 +161,19 @@ class Dataset:
                     if retweet_dict is not None:
                         retweet = self._update_tweet(retweet_dict)
                         tweet.retweet_of = retweet
-                    
+                        retweet.retweeted_by.append(tweet)
+
+    @property
+    def users_by_id(self):
+        return self._users_by_id
+
+    @property
+    def tweets_by_id(self):
+        return self._tweets_by_id
+
+    @property
+    def users_by_username(self):
+        return self._users_by_username
 
     def _update_tweet(self, tweet_dict):
         tweet_id = tweet_dict['id']
@@ -160,7 +183,8 @@ class Dataset:
             tweet = Tweet(tweet_id)
             self._tweets_by_id[tweet_id] = tweet
 
-        tweet.created_at = tweet_dict['created_at']
+        created_at_str = tweet_dict['created_at']
+        tweet.created_at = datetime.strptime(created_at_str, "%a %b %d %H:%M:%S %z %Y") 
         tweet.text = tweet_dict['text']
 
         userid = tweet_dict['userid']
@@ -176,19 +200,6 @@ class Dataset:
             self._users_by_username[screenname] = user
 
         return tweet        
-
-
-    @property
-    def users_by_id(self):
-        return self._users_by_id
-
-    @property
-    def tweets_by_id(self):
-        return self._tweets_by_id
-
-    @property
-    def users_by_username(self):
-        return self._users_by_username
 
     def __repr__(self):
         return "Dataset(%r, %r, %r)" % (self._users_by_id, self._users_by_username, self._tweets_by_id)
