@@ -147,11 +147,11 @@ class Dataset:
                     if user_id in self._users_by_id: 
                         user = self._users_by_id[user_id]
                     else: 
-                        user = User(user_dict['user_id'])    
+                        user = User(user_id)    
                         self._users_by_id[user_id] = user
                     
                     for follower_id in user_dict['followers']:
-                        user.followers.add(follower_id)
+                        user.followers.add(str(follower_id))
 
 
     def load_tweets(self, path):
@@ -181,7 +181,7 @@ class Dataset:
         return self._users_by_username
 
     def _update_tweet(self, tweet_dict):
-        tweet_id = tweet_dict['id']
+        tweet_id = str(tweet_dict['id'])
         if tweet_id in self._tweets_by_id: 
             tweet = self._tweets_by_id[tweet_id]
         else:
@@ -192,7 +192,7 @@ class Dataset:
         tweet.created_at = datetime.strptime(created_at_str, "%a %b %d %H:%M:%S %z %Y") 
         tweet.text = tweet_dict['text']
 
-        userid = tweet_dict['userid']
+        userid = str(tweet_dict['userid'])
         if userid in self._users_by_id:
             user = self._users_by_id[userid]
         else: 
@@ -201,7 +201,7 @@ class Dataset:
 
         tweet.user = user
 
-        screenname = tweet_dict.get('screenname', None)
+        screenname = tweet_dict.get('userscreenname', None)
         if screenname is not None: 
             user.screenname = screenname
             self._users_by_username[screenname] = user

@@ -1,6 +1,7 @@
 
 from datetime import datetime
 
+import re
 import random
 import jgrapht
 
@@ -10,15 +11,28 @@ from models import (
     Dataset,
 )
 
+def _lookup_RT(text): 
+    match = re.search(r'RT\s@((\w){1,15}):', text)
+    if match: 
+        return match.group(1)
+    return None
 
 def _find_retweet_source(dataset: Dataset, retweet, previous_retweets):
     """Given a retweet and all previous retweers estimate from which 
     retweet it originated.
     """
-
     user = retweet.user
+    rt_username = _lookup_RT(retweet.text)
 
-    # FIXME: Check if text contains RT @ 
+    # Find a tweet from the RT user
+    if rt_username is not None:
+        candidates = []
+        for rt in previous_retweets:
+            if rt.user.screenname == rt_username: 
+                candidates.append(rt)
+
+        if len(candidates) != 0:
+            return max(candidates, key= lambda k: rt.user.popularity)
 
     # Check if we follow some of the previous users that retweeted
     candidates = []
