@@ -94,8 +94,8 @@ class User:
 
     def __init__(self, id):
         self._id = id
-        self._followers = []
-        self._following = []
+        self._followers = set()
+        self._following = set()
         self._screenname = None
 
     @property
@@ -104,10 +104,10 @@ class User:
     
     @property
     def followers(self):
-        return self._followers    
+        return self._followers
 
     @property
-    def following(self):
+    def following(self) :
         return self._following
 
     @property
@@ -146,8 +146,9 @@ class Dataset:
                         user = User(user_dict['user_id'])    
                         self._users_by_id[user_id] = user
                     
-                    followers = [str(f) for f in user_dict['followers']]
-                    user.followers.extend(followers)
+                    for follower_id in user_dict['followers']:
+                        user.followers.add(follower_id)
+
 
     def load_tweets(self, path):
         for fentry in os.scandir(path):

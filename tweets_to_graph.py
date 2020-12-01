@@ -12,7 +12,6 @@ from models import Dataset
 from dags import create_dags
 
 
-
 def run(args):
 
     print('Loading dataset')
@@ -28,6 +27,8 @@ def run(args):
 
     dags = [dag for dag in create_dags(dataset)]
     print('Created {} dags'.format(len(dags)))
+    for d in dags: 
+        print(d)
 
     #write_json(g, args.output_file)
     #print("Wrote graph as json file: {}".format(args.output_file))
