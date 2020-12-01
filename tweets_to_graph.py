@@ -9,6 +9,7 @@ import jgrapht
 from jgrapht.io.exporters import write_json
 
 from models import Dataset
+from dags import create_dags
 
 
 
@@ -20,10 +21,13 @@ def run(args):
     dataset.load_users_and_followers(args.input_followers_dir)
     print('Loading tweets from: {}'.format(args.input_tweets_dir))
     dataset.load_tweets(args.input_tweets_dir)
+
     #print(dataset.users_by_id)
     #print(dataset.tweets_by_id)
     #print(dataset)
 
+    dags = [dag for dag in create_dags(dataset)]
+    print('Created {} dags'.format(len(dags)))
 
     #write_json(g, args.output_file)
     #print("Wrote graph as json file: {}".format(args.output_file))
