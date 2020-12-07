@@ -26,7 +26,6 @@ from matplotlib import pyplot as plt
 from sklearn import model_selection
 from sklearn.linear_model import LogisticRegression
 from sklearn.manifold import TSNE
-#from IPython.display import display, HTML
 
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping
@@ -103,7 +102,7 @@ def run(args):
     print(g.info())
 
     fullbatch_generator = FullBatchNodeGenerator(g, sparse=False)
-    gcn_model = GCN(layer_sizes=[128], activations=["relu"], generator=fullbatch_generator)
+    gcn_model = GCN(layer_sizes=[128, 64], activations=["relu", "relu"], generator=fullbatch_generator)
 
     corrupted_generator = CorruptedGenerator(fullbatch_generator)
     gen = corrupted_generator.flow(g.nodes())
@@ -121,7 +120,24 @@ def run(args):
 
     x_emb_in, x_emb_out = gcn_model.in_out_tensors()
 
-    # TODO
+    # for full batch models, squeeze out the batch dim (which is 1)
+    x_out = tf.squeeze(x_emb_out, axis=0)
+    emb_model = Model(inputs=x_emb_in, outputs=x_out)
+
+    all_embeddings = emb_model.predict(fullbatch_generator.flow(g.nodes()))
+
+    trans = TSNE(n_components=2)
+    emb_transformed = pd.DataFrame(trans.fit_transform(all_embeddings), index=g.nodes())
+
+    ig, ax = plt.subplots(figsize=(7, 7))
+    ax.scatter(
+        emb_transformed[0],
+        emb_transformed[1],
+        cmap="jet",
+    )
+    ax.set(aspect="equal", xlabel="$X_1$", ylabel="$X_2$")
+    plt.title("TSNE visualization of GCN embeddings")
+    plt.show()
 
 
 if __name__ == "__main__":
