@@ -2,3 +2,4 @@
 env/
 last_endpoint.txt
 remaining_user_ids_followers.pkl
+remaining_users_botometer.pkl
