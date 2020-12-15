@@ -103,7 +103,6 @@ if __name__ == "__main__":
         help="Input directory containing tweet files in json format",
         dest="input_dir",
         type=str,
-        required=True,
     )
     parser.add_argument(
         "--output-directory",
