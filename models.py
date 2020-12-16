@@ -95,7 +95,7 @@ class User:
     def botometer_scores(self):
         return self._botometer_scores
 
-    @screenname.setter
+    @botometer_scores.setter
     def botometer_scores(self, value):
         self._botometer_scores = value
 

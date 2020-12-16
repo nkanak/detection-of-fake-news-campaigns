@@ -99,6 +99,20 @@ def postprocess_dag(dataset: Dataset, dag):
         p_dag.vertex_attrs[vid]['following'] = len(tweet.user.following)
         p_dag.vertex_attrs[vid]['delay'] = dag.vertex_attrs[tweet]['delay']
 
+        if tweet.user.botometer_scores is None: 
+            tweet.user.botometer_scores = BotometerScores()
+
+        for key in [
+            "astroturf",
+            "fake_follower",
+            "financial",
+            "other",
+            "overall",
+            "self_declared",
+            "spammer",
+        ]:
+            p_dag.vertex_attrs[vid][key] = getattr(tweet.user.botometer_scores, key)
+
         # TODO: add more features
         
         tweet_to_id[tweet] = vid
