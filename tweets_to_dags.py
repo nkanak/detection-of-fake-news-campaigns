@@ -5,6 +5,7 @@ import json
 import time
 import os
 import jgrapht
+import logging
 
 from jgrapht.io.exporters import write_json
 
@@ -14,19 +15,21 @@ from dags import create_dags
 
 def run(args):
 
-    print('Loading dataset')
+    logging.info('Loading dataset')
     dataset = Dataset()
-    print('Loading users and followers from: {}'.format(args.input_followers_dir))
-    dataset.load_users_and_followers(args.input_followers_dir)
-    print('Loading botometer data from: {}'.format(args.input_botometer_dir))
+    logging.info('Loading users from: {}'.format(args.input_users_dir))
+    dataset.load_users(args.input_users_dir)
+    logging.info('Loading followers from: {}'.format(args.input_followers_dir))
+    dataset.load_followers(args.input_followers_dir)
+    logging.info('Loading botometer data from: {}'.format(args.input_botometer_dir))
     dataset.load_botometer(args.input_botometer_dir)
-    print('Loading tweets from: {}'.format(args.input_tweets_dir))
+    logging.info('Loading tweets from: {}'.format(args.input_tweets_dir))
     dataset.load_tweets(args.input_tweets_dir)
 
     if not os.path.exists(args.output_dags_dir):
         os.makedirs(args.output_dags_dir)
 
-    print('Writing dags to: {}'.format(args.output_dags_dir))
+    logging.info('Writing dags to: {}'.format(args.output_dags_dir))
     for i, dag in enumerate(create_dags(dataset)):
         dag_path = os.path.join(args.output_dags_dir, 'dag-{}.json'.format(i))
         write_json(dag, dag_path)
@@ -34,9 +37,20 @@ def run(args):
 
 if __name__ == "__main__":
 
+    logging.basicConfig(
+        format='%(asctime)-15s %(name)-15s %(levelname)-8s %(message)s', 
+        level=logging.INFO)
+
     parser = argparse.ArgumentParser(
         epilog="Example: python tweets_to_dags.py"
     )
+    parser.add_argument(
+        "--input-users-dir",
+        help="Input directory containing user profiles as json files",
+        dest="input_users_dir",
+        type=str,
+        default="raw_data/user_profiles"
+    )    
     parser.add_argument(
         "--input-tweets-dir",
         help="Input directory containing tweets as json files",

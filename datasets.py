@@ -41,25 +41,29 @@ class Dataset:
         self._users_by_username = {}
         self._tweets_by_id = {}
 
-    def load_users_and_followers(self, path):
+    def load_users(self, path):
+        if not os.path.isdir(path):
+            logging.warning('Users dir {} not found!'.format(path))
+            return
+
+    def load_followers(self, path):
+        if not os.path.isdir(path):
+            logging.warning('Followers dir {} not found!'.format(path))
+            return
         for fentry in os.scandir(path):
             if fentry.path.endswith(".json") and fentry.is_file():
                 with open(fentry.path) as json_file:
-
                     user_dict = json.load(json_file)
-                    user_id = str(user_dict["user_id"])
-
-                    if user_id in self._users_by_id:
-                        user = self._users_by_id[user_id]
-                    else:
-                        user = User(user_id)
-                        self._users_by_id[user_id] = user
+                    user = self._get_user(str(user_dict["user_id"]))
 
                     if "followers" in user_dict:
                         for follower_id in user_dict["followers"]:
                             user.followers.add(str(follower_id))
 
     def load_tweets(self, path):
+        if not os.path.isdir(path):
+            logging.warning('Tweets dir {} not found!'.format(path))
+            return
         for fentry in os.scandir(path):
             if fentry.path.endswith(".json") and fentry.is_file():
                 with open(fentry.path) as json_file:
@@ -74,6 +78,9 @@ class Dataset:
                         retweet.retweeted_by.append(tweet)
 
     def load_botometer(self, path):
+        if not os.path.isdir(path):
+            logging.warning('Botometer dir {} not found!'.format(path))
+            return
         for fentry in os.scandir(path):
             if fentry.path.endswith(".json") and fentry.is_file():
                 with open(fentry.path) as json_file:
