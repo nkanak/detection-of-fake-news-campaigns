@@ -8,7 +8,7 @@ import jgrapht
 
 from jgrapht.io.exporters import write_json
 
-from models import Dataset
+from datasets import Dataset
 from dags import create_dags
 
 

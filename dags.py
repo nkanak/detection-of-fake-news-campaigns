@@ -8,8 +8,10 @@ import jgrapht
 from models import (
     Tweet,
     User,
-    Dataset,
+    BotometerScores,
 )
+
+from datasets import Dataset
 
 def _lookup_RT(text): 
     match = re.search(r'RT\s@((\w){1,15}):', text)
