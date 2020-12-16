@@ -18,6 +18,8 @@ def run(args):
     dataset = Dataset()
     print('Loading users and followers from: {}'.format(args.input_followers_dir))
     dataset.load_users_and_followers(args.input_followers_dir)
+    print('Loading botometer data from: {}'.format(args.input_botometer_dir))
+    dataset.load_botometer(args.input_botometer_dir)
     print('Loading tweets from: {}'.format(args.input_tweets_dir))
     dataset.load_tweets(args.input_tweets_dir)
 
@@ -48,6 +50,13 @@ if __name__ == "__main__":
         dest="input_followers_dir",
         type=str,
         default="raw_data/followers"
+    )
+    parser.add_argument(
+        "--input-botometer-dir",
+        help="Input directory containing botometer statistics per user as json files",
+        dest="input_botometer_dir",
+        type=str,
+        default="raw_data/botometer"
     )
     parser.add_argument(
         "--output-dags-dir",

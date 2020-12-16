@@ -1,6 +1,7 @@
 
 import os
 import json
+import logging
 
 from datetime import datetime
 
@@ -29,7 +30,6 @@ def _strip_tweet(dict_tweet):
         retweet, _ = _strip_tweet(dict_tweet["retweeted_status"])
 
     return tweet, retweet
-
 
 
 class Tweet: 
@@ -97,6 +97,7 @@ class User:
         self._followers = set()
         self._following = set()
         self._screenname = None
+        self._botometer_scores = None
 
     @property
     def id(self):
@@ -122,11 +123,29 @@ class User:
     def popularity(self):
         return len(self._followers)
 
+    @property
+    def botometer_scores(self):
+        return self._botometer_scores
+
+    @screenname.setter
+    def botometer_scores(self, value):
+        self._botometer_scores = value
+
     def __repr__(self):
         return "User(%r)" % self._id
     
 
+class BotometerScores: 
 
+    def __init__(self):
+        self.astroturf = 0.0
+        self.fake_follower = 0.0
+        self.financial = 0.0
+        self.other = 0.0
+        self.overall = 0.0
+        self.self_declared = 0.0
+        self.spammer = 0.0
+   
 
 class Dataset:
     """A dataset model.
@@ -150,8 +169,9 @@ class Dataset:
                         user = User(user_id)    
                         self._users_by_id[user_id] = user
                     
-                    for follower_id in user_dict['followers']:
-                        user.followers.add(str(follower_id))
+                    if 'followers' in user_dict: 
+                        for follower_id in user_dict['followers']:
+                            user.followers.add(str(follower_id))
 
 
     def load_tweets(self, path):
@@ -168,6 +188,17 @@ class Dataset:
                         tweet.retweet_of = retweet
                         retweet.retweeted_by.append(tweet)
 
+    def load_botometer(self, path):
+        for fentry in os.scandir(path):
+            if fentry.path.endswith(".json") and fentry.is_file():
+                with open(fentry.path) as json_file:
+                    boto = json.load(json_file)
+                    result = self._parse_botometer(boto)
+                    if result is not None: 
+                        user = self._get_user(result[0])
+                        user.botometer_scores = result[1]
+
+
     @property
     def users_by_id(self):
         return self._users_by_id
@@ -179,6 +210,14 @@ class Dataset:
     @property
     def users_by_username(self):
         return self._users_by_username
+
+    def _get_user(self, user_id):
+        if user_id in self._users_by_id:
+            user = self._users_by_id[user_id]
+        else: 
+            user = User(user_id)
+            self._users_by_id[user_id] = user
+        return user
 
     def _update_tweet(self, tweet_dict):
         tweet_id = str(tweet_dict['id'])
@@ -192,13 +231,8 @@ class Dataset:
         tweet.created_at = datetime.strptime(created_at_str, "%a %b %d %H:%M:%S %z %Y") 
         tweet.text = tweet_dict['text']
 
-        userid = str(tweet_dict['userid'])
-        if userid in self._users_by_id:
-            user = self._users_by_id[userid]
-        else: 
-            user = User(userid)
-            self._users_by_id[userid] = user
-
+        user_id = str(tweet_dict['userid'])
+        user = self._get_user(user_id)
         tweet.user = user
 
         screenname = tweet_dict.get('userscreenname', None)
@@ -207,6 +241,19 @@ class Dataset:
             self._users_by_username[screenname] = user
 
         return tweet        
+
+    def _parse_botometer(self, data): 
+        scores = BotometerScores()
+
+        if 'user' not in data: 
+            # Skip on error
+            return None
+
+        user_id = data['user']['user_data']['id_str']
+        for key in ['astroturf', 'fake_follower', 'financial', 'other', 'overall', 'self_declared', 'spammer']:
+            setattr(scores, key, data['raw_scores']['english'][key])
+
+        return user_id, scores
 
     def __repr__(self):
         return "Dataset(%r, %r, %r)" % (self._users_by_id, self._users_by_username, self._tweets_by_id)
