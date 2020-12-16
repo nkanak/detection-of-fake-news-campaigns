@@ -43,26 +43,46 @@ class Dataset:
 
     def load_users(self, path):
         if not os.path.isdir(path):
-            logging.warning('Users dir {} not found!'.format(path))
-            return
-
-    def load_followers(self, path):
-        if not os.path.isdir(path):
-            logging.warning('Followers dir {} not found!'.format(path))
+            logging.warning("Users dir {} not found!".format(path))
             return
         for fentry in os.scandir(path):
             if fentry.path.endswith(".json") and fentry.is_file():
                 with open(fentry.path) as json_file:
+                    print(fentry.path)
                     user_dict = json.load(json_file)
-                    user = self._get_user(str(user_dict["user_id"]))
+                    user = self._get_user(user_dict["id_str"])
 
-                    if "followers" in user_dict:
-                        for follower_id in user_dict["followers"]:
+                    for key in [
+                        "followers_count",
+                        "listed_count",
+                        "favourites_count",
+                        "statuses_count",
+                        "description",
+                        "verified",
+                        "protected",
+                    ]:
+                        setattr(user, key, user_dict[key])
+
+                    user.following_count = user_dict['friends_count']
+
+
+    def load_followers(self, path):
+        if not os.path.isdir(path):
+            logging.warning("Followers dir {} not found!".format(path))
+            return
+        for fentry in os.scandir(path):
+            if fentry.path.endswith(".json") and fentry.is_file():
+                with open(fentry.path) as json_file:
+                    followers_dict = json.load(json_file)
+                    user = self._get_user(str(followers_dict["user_id"]))
+
+                    if "followers" in followers_dict:
+                        for follower_id in followers_dict["followers"]:
                             user.followers.add(str(follower_id))
 
     def load_tweets(self, path):
         if not os.path.isdir(path):
-            logging.warning('Tweets dir {} not found!'.format(path))
+            logging.warning("Tweets dir {} not found!".format(path))
             return
         for fentry in os.scandir(path):
             if fentry.path.endswith(".json") and fentry.is_file():
@@ -79,7 +99,7 @@ class Dataset:
 
     def load_botometer(self, path):
         if not os.path.isdir(path):
-            logging.warning('Botometer dir {} not found!'.format(path))
+            logging.warning("Botometer dir {} not found!".format(path))
             return
         for fentry in os.scandir(path):
             if fentry.path.endswith(".json") and fentry.is_file():

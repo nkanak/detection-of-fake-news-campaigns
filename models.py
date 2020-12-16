@@ -64,7 +64,15 @@ class User:
         self._id = id
         self._followers = set()
         self._following = set()
+        self._followers_count = 0
+        self._following_count = 0
+        self._listed_count = 0
+        self._favourites_count = 0
+        self._statuses_count = 0
+        self._verified = False
+        self._protected = False
         self._screenname = None
+        self._description = None
         self._botometer_scores = None
 
     @property
@@ -98,6 +106,70 @@ class User:
     @botometer_scores.setter
     def botometer_scores(self, value):
         self._botometer_scores = value
+
+    @property
+    def description(self):
+        return self._description
+
+    @description.setter
+    def description(self, value):
+        self._description = value
+
+    @property
+    def verified(self):
+        return self._verified
+
+    @verified.setter
+    def verified(self, value) :
+        self._verified = value
+
+    @property
+    def protected(self):
+        return self._protected
+
+    @protected.setter
+    def protected(self, value) :
+        self._protected = value
+
+    @property
+    def followers_count(self):
+        return self._followers_count
+
+    @followers_count.setter
+    def followers_count(self, value) :
+        self._followers_count = value
+
+    @property
+    def following_count(self):
+        return self._following_count
+
+    @following_count.setter
+    def following_count(self, value) :
+        self._following_count = value
+
+    @property
+    def statuses_count(self):
+        return self._statuses_count
+
+    @statuses_count.setter
+    def statuses_count(self, value) :
+        self._statuses_count = value
+
+    @property
+    def listed_count(self):
+        return self._listed_count
+
+    @listed_count.setter
+    def listed_count(self, value) :
+        self._listed_count = value
+
+    @property
+    def favourites_count(self):
+        return self._favourites_count
+
+    @favourites_count.setter
+    def favourites_count(self, value) :
+        self._favourites_count = value
 
     def __repr__(self):
         return "User(%r)" % self._id
