@@ -48,7 +48,6 @@ class Dataset:
         for fentry in os.scandir(path):
             if fentry.path.endswith(".json") and fentry.is_file():
                 with open(fentry.path) as json_file:
-                    print(fentry.path)
                     user_dict = json.load(json_file)
                     user = self._get_user(user_dict["id_str"])
 
