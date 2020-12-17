@@ -21,8 +21,9 @@ def run(args):
     dataset.load_users(args.input_users_dir)
     logging.info('Loading followers from: {}'.format(args.input_followers_dir))
     dataset.load_followers(args.input_followers_dir)
-    logging.info('Loading botometer data from: {}'.format(args.input_botometer_dir))
-    dataset.load_botometer(args.input_botometer_dir)
+    if args.botometer:
+        logging.info('Loading botometer data from: {}'.format(args.input_botometer_dir))
+        dataset.load_botometer(args.input_botometer_dir)
     logging.info('Loading tweets from: {}'.format(args.input_tweets_dir))
     dataset.load_tweets(args.input_tweets_dir)
 
@@ -30,7 +31,7 @@ def run(args):
         os.makedirs(args.output_dags_dir)
 
     logging.info('Writing dags to: {}'.format(args.output_dags_dir))
-    for i, dag in enumerate(create_dags(dataset)):
+    for i, dag in enumerate(create_dags(dataset, botometer_features=args.botometer)):
         dag_path = os.path.join(args.output_dags_dir, 'dag-{}.json'.format(i))
         write_json(dag, dag_path)
 
@@ -79,5 +80,9 @@ if __name__ == "__main__":
         type=str,
         default="raw_data/dags"
     )
+    parser.add_argument('--botometer', dest='botometer', action='store_true', help="Enable botometer (default is disabled)")
+    parser.add_argument('--no-botometer', dest='botometer', action='store_false', help="Disable botometer")
+    parser.set_defaults(botometer=False)
+
     args = parser.parse_args()
     run(args)

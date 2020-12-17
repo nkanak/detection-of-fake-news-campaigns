@@ -86,7 +86,7 @@ def create_dag(dataset: Dataset, tweet_id: str, min_retweets=5):
     return dag
 
 
-def postprocess_dag(dataset: Dataset, dag): 
+def postprocess_dag(dataset: Dataset, dag, botometer_features=False): 
     """Given a dag convert vertices to integers and compute features.
     """
     p_dag = jgrapht.create_graph(directed=True, any_hashable=True)
@@ -95,26 +95,28 @@ def postprocess_dag(dataset: Dataset, dag):
     tweet_to_id = {}
     for tweet in dag.vertices: 
         p_dag.add_vertex(vertex=vid)
-        p_dag.vertex_attrs[vid]['followers'] = len(tweet.user.followers)
-        p_dag.vertex_attrs[vid]['following'] = len(tweet.user.following)
         p_dag.vertex_attrs[vid]['delay'] = dag.vertex_attrs[tweet]['delay']
+        p_dag.vertex_attrs[vid]['followers_count'] = max(len(tweet.user.followers), tweet.user.followers_count)
+        p_dag.vertex_attrs[vid]['following_count'] =  max(len(tweet.user.following), tweet.user.following_count)
 
-        if tweet.user.botometer_scores is None: 
-            tweet.user.botometer_scores = BotometerScores()
+        for key in ['verified', 'protected', 'favourites_count', 'listed_count', 'statuses_count']:
+            p_dag.vertex_attrs[vid][key] = int(getattr(tweet.user, key))
 
-        for key in [
-            "astroturf",
-            "fake_follower",
-            "financial",
-            "other",
-            "overall",
-            "self_declared",
-            "spammer",
-        ]:
-            p_dag.vertex_attrs[vid][key] = getattr(tweet.user.botometer_scores, key)
+        if botometer_features:
+            if tweet.user.botometer_scores is None: 
+                tweet.user.botometer_scores = BotometerScores()
 
-        # TODO: add more features
-        
+            for key in [
+                "astroturf",
+                "fake_follower",
+                "financial",
+                "other",
+                "overall",
+                "self_declared",
+                "spammer",
+            ]:
+                p_dag.vertex_attrs[vid][key] = getattr(tweet.user.botometer_scores, key)
+
         tweet_to_id[tweet] = vid
         vid += 1
         
@@ -129,7 +131,7 @@ def postprocess_dag(dataset: Dataset, dag):
     return p_dag
 
 
-def create_dags(dataset: Dataset, min_retweets=5): 
+def create_dags(dataset: Dataset, min_retweets=5, botometer_features=False): 
     """Given a dataset create all dags
     """
 
@@ -137,6 +139,6 @@ def create_dags(dataset: Dataset, min_retweets=5):
         if not tweet.is_retweet:
             dag = create_dag(dataset, tweet.id, min_retweets=min_retweets)
             if dag is not None:
-                yield postprocess_dag(dataset, dag)
+                yield postprocess_dag(dataset, dag, botometer_features=botometer_features)
 
 

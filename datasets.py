@@ -99,7 +99,6 @@ class Dataset:
     def load_botometer(self, path):
         if not os.path.isdir(path):
             logging.warning("Botometer dir {} not found!".format(path))
-            return
         for fentry in os.scandir(path):
             if fentry.path.endswith(".json") and fentry.is_file():
                 with open(fentry.path) as json_file:
