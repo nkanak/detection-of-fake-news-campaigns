@@ -3,7 +3,7 @@
 
  - Build twitter follower-following graph
  - Use as twitter user description to compute initial user features 
-   (document embeddings with GloVE)
+   (document embeddings with GloVE or BERT)
 
 Output is vector per twitter user-id.
 
