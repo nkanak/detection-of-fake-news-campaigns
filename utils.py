@@ -41,3 +41,4 @@ def read_pickle_from_file(path):
     with open(path, 'rb') as f:
         obj = pickle.load(f)
     return obj
+
