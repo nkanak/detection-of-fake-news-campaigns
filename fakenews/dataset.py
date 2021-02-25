@@ -104,18 +104,21 @@ class FakeNewsDataset:
         )
         tweet.text = tweet_dict["text"]
 
-        #from pprint import pp
-        #pp(tweet_dict)
-
+        # load tweet user 
         if "user" in tweet_dict:
             user = self._update_user(tweet_dict["user"])
             tweet.user = user
         elif "userid" in tweet_dict:
-            user_id = str(tweet_dict["userid"])
-            user = self._update_user({"id": user_id})
+            user = self._update_user({"id": str(tweet_dict["userid"])})
             tweet.user = user
         else:
             raise ValueError("Failed to parse user in tweet: {}".format(tweet.id))
+
+        # load retweet
+        if "retweeted_status" in tweet_dict: 
+            retweet = self._update_tweet(tweet_dict["retweeted_status"], real=real)
+            tweet.retweet_of = retweet
+            retweet.retweeted_by.append(tweet)
 
         return tweet
 
