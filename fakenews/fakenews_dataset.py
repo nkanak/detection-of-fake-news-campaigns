@@ -63,7 +63,6 @@ class FakeNewsDataset:
     def load(self): 
         """Load the dataset.
         """
-
         for fentry in os.scandir(self._fake_news_retweets_path):
             if fentry.is_dir():
                 retweets_path = "{}/retweets".format(fentry.path)
@@ -84,14 +83,39 @@ class FakeNewsDataset:
                     retweets = retweets_dict.get("retweets", [])
                     if len(retweets) == 0:
                         continue
-                    logging.debug("Loading retweets from file {}".format(fentry.path))
-                    self._load_retweets(retweets, real)
-        pass
+                    logging.info("Loading retweets from file {}".format(fentry.path))
+                    self._load_retweets(retweets, real=real)
 
-    def _load_retweets(self, retweets, real): 
+    def _load_retweets(self, retweets, real):
+        for retweet in retweets: 
+            self._update_tweet(retweet)
+
         # TODO
         # Handle retweet
         pass
+
+    def _update_tweet(self, tweet_dict):
+        tweet_id = str(tweet_dict["id"])
+        if tweet_id in self._tweets_by_id:
+            tweet = self._tweets_by_id[tweet_id]
+        else:
+            tweet = Tweet(tweet_id)
+            self._tweets_by_id[tweet_id] = tweet
+
+        created_at_str = tweet_dict["created_at"]
+        tweet.created_at = datetime.strptime(created_at_str, "%a %b %d %H:%M:%S %z %Y")
+        tweet.text = tweet_dict["text"]
+
+        #user_id = str(tweet_dict["userid"])
+        #user = self._get_user(user_id)
+        #tweet.user = user
+
+        #screenname = tweet_dict.get("userscreenname", None)
+        #if screenname is not None:
+        #    user.screenname = screenname
+        #    self._users_by_username[screenname] = user
+
+        return tweet
 
     @property
     def users_by_id(self):
