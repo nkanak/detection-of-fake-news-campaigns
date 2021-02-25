@@ -26,8 +26,7 @@ class FakeNewsDataset:
         self._user_followers_path = user_followers_path
 
     def get_user(self, user_id):
-        """Read a user and its followers from disk.
-        """
+        """Read a user and its followers from disk."""
         if user_id in self._users_by_id:
             return self._users_by_id[user_id]
 
@@ -60,9 +59,8 @@ class FakeNewsDataset:
 
         return user
 
-    def load(self): 
-        """Load the dataset.
-        """
+    def load(self):
+        """Load the dataset."""
         for fentry in os.scandir(self._fake_news_retweets_path):
             if fentry.is_dir():
                 retweets_path = "{}/retweets".format(fentry.path)
@@ -87,35 +85,73 @@ class FakeNewsDataset:
                     self._load_retweets(retweets, real=real)
 
     def _load_retweets(self, retweets, real):
-        for retweet in retweets: 
-            self._update_tweet(retweet)
+        for retweet in retweets:
+            self._update_tweet(retweet, real=real)
 
-        # TODO
-        # Handle retweet
-        pass
-
-    def _update_tweet(self, tweet_dict):
-        tweet_id = str(tweet_dict["id"])
+    def _get_tweet(self, tweet_id):
         if tweet_id in self._tweets_by_id:
             tweet = self._tweets_by_id[tweet_id]
         else:
             tweet = Tweet(tweet_id)
             self._tweets_by_id[tweet_id] = tweet
+        return tweet
 
-        created_at_str = tweet_dict["created_at"]
-        tweet.created_at = datetime.strptime(created_at_str, "%a %b %d %H:%M:%S %z %Y")
+    def _update_tweet(self, tweet_dict, real):
+        tweet = self._get_tweet(str(tweet_dict["id"]))
+        tweet.real = real
+        tweet.created_at = datetime.strptime(
+            tweet_dict["created_at"], "%a %b %d %H:%M:%S %z %Y"
+        )
         tweet.text = tweet_dict["text"]
 
-        #user_id = str(tweet_dict["userid"])
-        #user = self._get_user(user_id)
-        #tweet.user = user
+        #from pprint import pp
+        #pp(tweet_dict)
 
-        #screenname = tweet_dict.get("userscreenname", None)
-        #if screenname is not None:
-        #    user.screenname = screenname
-        #    self._users_by_username[screenname] = user
+        if "user" in tweet_dict:
+            user = self._update_user(tweet_dict["user"])
+            tweet.user = user
+        elif "userid" in tweet_dict:
+            user_id = str(tweet_dict["userid"])
+            user = self._update_user({"id": user_id})
+            tweet.user = user
+        else:
+            raise ValueError("Failed to parse user in tweet: {}".format(tweet.id))
 
         return tweet
+
+    def _get_user(self, user_id):
+        if user_id in self._users_by_id:
+            user = self._users_by_id[user_id]
+        else:
+            user = User(user_id)
+            self._users_by_id[user_id] = user
+        return user
+
+    def _update_user(self, user_dict):
+        user = self._get_user(str(user_dict["id"]))
+
+        if user.screenname is None and "screen_name" in user_dict:
+            user.screenname = user_dict["screen_name"]
+            self._users_by_username[user.screenname] = user
+
+        for key in [
+            "followers_count",
+            "listed_count",
+            "favourites_count",
+            "statuses_count",
+        ]:
+            setattr(user, key, user_dict.get(key, 0))
+
+        for key in [
+            "verified",
+            "protected",
+        ]:
+            setattr(user, key, user_dict.get(key, False))
+
+        user.following_count = user_dict.get("friends_count", 0)
+        user.description = user_dict.get("description", None)
+
+        return user
 
     @property
     def users_by_id(self):
@@ -131,4 +167,3 @@ class FakeNewsDataset:
             self._users_by_username,
             self._tweets_by_id,
         )
-

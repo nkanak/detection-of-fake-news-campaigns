@@ -13,7 +13,7 @@ import logging
 
 from jgrapht.io.exporters import write_json
 
-from fakenews_dataset import FakeNewsDataset
+from dataset import FakeNewsDataset
 from dags import create_dags
 
 

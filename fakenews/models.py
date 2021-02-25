@@ -9,6 +9,7 @@ class Tweet:
         self._text = None
         self._retweet_of = None
         self._retweeted_by = []
+        self._real = None
 
     @property
     def id(self):
@@ -29,6 +30,14 @@ class Tweet:
     @text.setter
     def text(self, value):
         self._text = value
+
+    @property
+    def real(self):
+        return self._real
+
+    @real.setter
+    def real(self, value):
+        self._real = value
 
     @property
     def user(self):
@@ -173,6 +182,7 @@ class User:
 
     def __repr__(self):
         return "User(%r)" % self._id
+
     
 
 class BotometerScores: 
