@@ -25,39 +25,6 @@ class FakeNewsDataset:
         self._user_profiles_path = user_profiles_path
         self._user_followers_path = user_followers_path
 
-    def get_user(self, user_id):
-        """Read a user and its followers from disk."""
-        if user_id in self._users_by_id:
-            return self._users_by_id[user_id]
-
-        # load user from file
-        with open("{}/{}.json".format(self._user_profiles_path, user_id)) as json_file:
-            user_dict = json.load(json_file)
-            user = User(user_id)
-            self._users_by_id[user_id] = user
-
-            for key in [
-                "followers_count",
-                "listed_count",
-                "favourites_count",
-                "statuses_count",
-                "description",
-                "verified",
-                "protected",
-            ]:
-                setattr(user, key, user_dict[key])
-
-            user.following_count = user_dict["friends_count"]
-
-        # load user followers from file
-        with open("{}/{}.json".format(self._user_followers_path, user_id)) as json_file:
-            followers_dict = json.load(json_file)
-
-            if "followers" in followers_dict:
-                for follower_id in followers_dict["followers"]:
-                    user.followers.add(str(follower_id))
-
-        return user
 
     def load(self):
         """Load the dataset."""
@@ -106,13 +73,24 @@ class FakeNewsDataset:
 
         # load tweet user 
         if "user" in tweet_dict:
-            user = self._update_user(tweet_dict["user"])
+            user = self._update_user_from_dict(tweet_dict["user"])
             tweet.user = user
         elif "userid" in tweet_dict:
-            user = self._update_user({"id": str(tweet_dict["userid"])})
+            user = self._update_user_from_dict({"id": str(tweet_dict["userid"])})
             tweet.user = user
         else:
             raise ValueError("Failed to parse user in tweet: {}".format(tweet.id))
+
+        # load additional user info from disk
+        try:
+            self._update_user_from_disk(user.id)
+        except FileNotFoundError: 
+            logging.warn("Failed to locate user {} profile".format(user.id))
+
+        try:
+            self._update_user_followers_from_disk(user.id)
+        except FileNotFoundError: 
+            logging.warn("Failed to locate user {} followers".format(user.id))            
 
         # load retweet
         if "retweeted_status" in tweet_dict: 
@@ -130,7 +108,7 @@ class FakeNewsDataset:
             self._users_by_id[user_id] = user
         return user
 
-    def _update_user(self, user_dict):
+    def _update_user_from_dict(self, user_dict):
         user = self._get_user(str(user_dict["id"]))
 
         if user.screenname is None and "screen_name" in user_dict:
@@ -143,18 +121,46 @@ class FakeNewsDataset:
             "favourites_count",
             "statuses_count",
         ]:
-            setattr(user, key, user_dict.get(key, 0))
+            current_value = getattr(user, key)
+            if current_value is None or current_value == 0: 
+                setattr(user, key, user_dict.get(key, 0))
 
         for key in [
             "verified",
             "protected",
         ]:
-            setattr(user, key, user_dict.get(key, False))
+            current_value = getattr(user, key)
+            if current_value is None or current_value is False: 
+                setattr(user, key, user_dict.get(key, False))
 
-        user.following_count = user_dict.get("friends_count", 0)
-        user.description = user_dict.get("description", None)
+        if user.following_count is None or user.following_count == 0: 
+            user.following_count = user_dict.get("friends_count", 0)
+
+        if user.description is None: 
+            user.description = user_dict.get("description", None)
 
         return user
+
+    def _update_user_from_disk(self, user_id):
+        """Read a user from disk."""
+        # load user from file
+        with open("{}/{}.json".format(self._user_profiles_path, user_id)) as json_file:
+            user_dict = json.load(json_file)
+            if str(user_dict["id"]) != user_id: 
+                raise ValueError("Invalid userid {} in json files".format(str(user_dict["id"])))
+            self._update_user_from_dict(user_dict)
+
+
+    def _update_user_followers_from_disk(self, user_id):
+        """Read a user's followers from disk."""
+        user = self._get_user(user_id)
+
+        # load user followers from file
+        with open("{}/{}.json".format(self._user_followers_path, user_id)) as json_file:
+            followers_dict = json.load(json_file)
+            for follower_id in followers_dict.get("followers", []):
+                user.followers.add(str(follower_id))
+
 
     @property
     def users_by_id(self):
