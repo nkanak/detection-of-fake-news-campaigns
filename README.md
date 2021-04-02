@@ -51,6 +51,8 @@ Example: python fetch_users_followers.py --input-directory input_dirpath--output
 ```
 
 ## Train a Graph Neural Network
-```
-# TODO
-``` 
+Under **fakenews** directory do:
+* Download glove embeddings and extract the zip file. Available at https://nlp.stanford.edu/projects/glove/ (recommended file: "Twitter (2B tweets): glove.twitter.27B.zip")
+* Run **compute_user_label.py** script file
+* Run **user_to_graph.py** script file (e.g. `python users_to_graph.py --input-dir ..\raw_data --embeddings-file ..\raw_data\glove.twitter.27B\glove.twitter.27B.200d.txt`)
+* Run **train_graphsage.py** script file (e.g. `python train_graphsage.py --user-labels-dir ../raw_data/user_labels`)
