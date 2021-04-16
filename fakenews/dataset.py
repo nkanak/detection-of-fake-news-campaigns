@@ -24,6 +24,8 @@ class FakeNewsDataset:
         self._fake_news_retweets_path = fake_news_retweets_path
         self._user_profiles_path = user_profiles_path
         self._user_followers_path = user_followers_path
+        self._missing_user_profiles = 0
+        self._missing_user_followers = 0
 
 
     def load(self):
@@ -84,12 +86,14 @@ class FakeNewsDataset:
         # load additional user info from disk
         try:
             self._update_user_from_disk(user.id)
-        except FileNotFoundError: 
+        except FileNotFoundError:
+            self._missing_user_profiles += 1 
             logging.warn("Failed to locate user {} profile".format(user.id))
 
         try:
             self._update_user_followers_from_disk(user.id)
         except FileNotFoundError: 
+            self._missing_user_followers += 1 
             logging.warn("Failed to locate user {} followers".format(user.id))            
 
         # load retweet

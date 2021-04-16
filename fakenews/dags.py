@@ -8,7 +8,6 @@ import jgrapht
 from models import (
     Tweet,
     User,
-    BotometerScores,
 )
 
 def _lookup_RT(text): 
@@ -84,7 +83,7 @@ def create_dag(dataset, tweet_id: str, min_retweets=5):
     return dag
 
 
-def postprocess_dag(dataset, dag, botometer_features=False): 
+def postprocess_dag(dataset, dag): 
     """Given a dag convert vertices to integers and compute features.
     """
     p_dag = jgrapht.create_graph(directed=True, any_hashable=True)
@@ -100,21 +99,6 @@ def postprocess_dag(dataset, dag, botometer_features=False):
         for key in ['verified', 'protected', 'favourites_count', 'listed_count', 'statuses_count']:
             p_dag.vertex_attrs[vid][key] = int(getattr(tweet.user, key))
 
-        if botometer_features:
-            if tweet.user.botometer_scores is None: 
-                tweet.user.botometer_scores = BotometerScores()
-
-            for key in [
-                "astroturf",
-                "fake_follower",
-                "financial",
-                "other",
-                "overall",
-                "self_declared",
-                "spammer",
-            ]:
-                p_dag.vertex_attrs[vid][key] = getattr(tweet.user.botometer_scores, key)
-
         tweet_to_id[tweet] = vid
         vid += 1
         
@@ -124,12 +108,11 @@ def postprocess_dag(dataset, dag, botometer_features=False):
 
         p_dag.add_edge(tweet_to_id[u], tweet_to_id[v])
 
-
-
     return p_dag
 
 
-def create_dags(dataset, min_retweets=5, botometer_features=False): 
+
+def create_dags(dataset, min_retweets=5): 
     """Given a dataset create all dags
     """
 
@@ -137,6 +120,6 @@ def create_dags(dataset, min_retweets=5, botometer_features=False):
         if not tweet.is_retweet:
             dag = create_dag(dataset, tweet.id, min_retweets=min_retweets)
             if dag is not None:
-                yield postprocess_dag(dataset, dag, botometer_features=botometer_features)
+                yield postprocess_dag(dataset, dag)
 
 
