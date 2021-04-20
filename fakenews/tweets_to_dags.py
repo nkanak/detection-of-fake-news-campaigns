@@ -24,6 +24,7 @@ def run(args):
 
     dataset_pkl = "tweets-to-dags-dataset.pkl"
     if os.path.exists(dataset_pkl):
+        logging.info("Loading dataset from: {}".format(dataset_pkl))
         dataset = utils.read_pickle_from_file(dataset_pkl)
     else:
         user_profiles_path = "{}/user_profiles".format(args.input_dir)
@@ -40,10 +41,10 @@ def run(args):
         utils.write_object_to_pickle_file(dataset_pkl, dataset)
 
     dags_path = "{}/dags".format(args.output_dir)
-    logging.info("Writing dags to: {}".format(args.dags_path))
-    os.makedirs(args.dags_path, exist_ok=True)
+    logging.info("Writing dags to: {}".format(dags_path))
+    os.makedirs(dags_path, exist_ok=True)
     for i, dag in enumerate(create_dags(dataset)):
-        dag_path = os.path.join(args.dags_path, "dag-{}.json".format(i))
+        dag_path = os.path.join(dags_path, "dag-{}.json".format(i))
         write_json(dag, dag_path)
 
 
