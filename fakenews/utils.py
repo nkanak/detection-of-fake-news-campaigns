@@ -5,6 +5,8 @@ import numpy as np
 from typing import List, Dict
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
+from tqdm import tqdm
+import pandas as pd
 
 stop_words = set(stopwords.words('english'))
 
@@ -65,3 +67,28 @@ def generate_tokens_from_text(text:str, lowercased:bool=True, stopwords_removed:
     if stopwords_removed:
         tokens = [w for w in tokens if not w in stop_words]
     return tokens
+
+def create_user_labels_df(user_ids, user_labels_dir):
+    labels = []
+    indexes = []
+    count1 = 0
+    count2 = 0
+    for user_id in tqdm(user_ids):
+        if not os.path.exists('%s/%s.json' % (user_labels_dir, user_id)):
+            count1 += 1
+            indexes.append(int(user_id))
+            labels.append(0)
+            continue
+
+        with open('%s/%s.json' % (user_labels_dir, user_id)) as json_file:
+            user_label = json.load(json_file)
+            indexes.append(int(user_label['id']))
+            if user_label['fake'] >= user_label['real']/4.0:
+                labels.append(1)
+            else:
+                labels.append(0)
+            count2 += 1
+    df = pd.DataFrame(labels, index=indexes, columns=['label'])
+    print('We set random label to %s users' % (count1))
+    print('We set correct labels to %s users' % (count2))
+    return df
