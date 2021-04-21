@@ -5,7 +5,7 @@ import random
 
 from datetime import datetime
 
-from models import Tweet, User, BotometerScores
+from models import Tweet, User
 
 
 class FakeNewsDataset:

@@ -184,15 +184,3 @@ class User:
         return "User(%r)" % self._id
 
     
-
-class BotometerScores: 
-
-    def __init__(self):
-        self.astroturf = 0.0
-        self.fake_follower = 0.0
-        self.financial = 0.0
-        self.other = 0.0
-        self.overall = 0.0
-        self.self_declared = 0.0
-        self.spammer = 0.0
-
