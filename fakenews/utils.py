@@ -1,6 +1,7 @@
 import os
 import json
 import pickle
+import random
 import numpy as np
 from typing import List, Dict
 from nltk.tokenize import word_tokenize
@@ -92,3 +93,14 @@ def create_user_labels_df(user_ids, user_labels_dir):
     print('We set random label to %s users' % (count1))
     print('We set correct labels to %s users' % (count2))
     return df
+
+
+def create_json_files_iterator(path, sample_probability=None):
+    allfiles = []
+    for fentry in os.scandir(path):
+        if fentry.path.endswith(".json") and fentry.is_file():
+            if sample_probability is not None: 
+                if random.uniform(0, 1) > sample_probability:
+                    continue
+            allfiles.append(fentry.path)
+    return allfiles

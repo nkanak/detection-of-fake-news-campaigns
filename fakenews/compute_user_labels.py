@@ -49,7 +49,7 @@ class UserLabels:
         for user_id, (real_count, fake_count)  in self._user_labels.items(): 
             user_path = "{}/{}.json".format(self._user_labels_path, user_id)
             with open(user_path, "w") as json_file:
-                logging.info("Writing user label to file {}".format(user_path))
+                logging.debug("Writing user label to file {}".format(user_path))
                 user_obj = { "id": user_id, "real": real_count, "fake": fake_count }
                 json.dump(user_obj, json_file)
 
@@ -61,7 +61,7 @@ class UserLabels:
                     retweets = retweets_dict.get("retweets", [])
                     if len(retweets) == 0:
                         continue
-                    logging.info("Loading retweets from file {}".format(fentry.path))
+                    logging.debug("Loading retweets from file {}".format(fentry.path))
                     for retweet in retweets:
                         self._update_tweet(retweet, real=real)
 

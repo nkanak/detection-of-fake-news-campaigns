@@ -99,6 +99,9 @@ def postprocess_dag(dataset, dag):
         for key in ['verified', 'protected', 'favourites_count', 'listed_count', 'statuses_count']:
             p_dag.vertex_attrs[vid][key] = int(getattr(tweet.user, key))
 
+        if tweet.user.embedding is not None:
+            p_dag.vertex_attrs[vid]['user_profile_embedding'] = tweet.user.embedding
+
         tweet_to_id[tweet] = vid
         vid += 1
         

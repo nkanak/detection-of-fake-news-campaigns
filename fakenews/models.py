@@ -1,5 +1,4 @@
 
-
 class Tweet: 
 
     def __init__(self, id): 
@@ -82,7 +81,7 @@ class User:
         self._protected = False
         self._screenname = None
         self._description = None
-        self._botometer_scores = None
+        self._embedding = None
 
     @property
     def id(self):
@@ -107,14 +106,6 @@ class User:
     @property
     def popularity(self):
         return len(self._followers)
-
-    @property
-    def botometer_scores(self):
-        return self._botometer_scores
-
-    @botometer_scores.setter
-    def botometer_scores(self, value):
-        self._botometer_scores = value
 
     @property
     def description(self):
@@ -179,6 +170,14 @@ class User:
     @favourites_count.setter
     def favourites_count(self, value) :
         self._favourites_count = value
+
+    @property
+    def embedding(self):
+        return self._embedding
+
+    @embedding.setter
+    def embedding(self, value) :
+        self._embedding = value
 
     def __repr__(self):
         return "User(%r)" % self._id

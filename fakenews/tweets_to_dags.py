@@ -29,15 +29,17 @@ def run(args):
     else:
         user_profiles_path = "{}/user_profiles".format(args.input_dir)
         user_followers_path = "{}/user_followers".format(args.input_dir)
+        user_embeddings_path = "{}/user_embeddings".format(args.input_dir)
         real_news_retweets_path = "{}/{}/real".format(args.input_dir, args.website)
         fake_news_retweets_path = "{}/{}/fake".format(args.input_dir, args.website)
         dataset = FakeNewsDataset(
             user_profiles_path=user_profiles_path,
             user_followers_path=user_followers_path,
+            user_embeddings_path=user_embeddings_path,
             real_news_retweets_path=real_news_retweets_path,
             fake_news_retweets_path=fake_news_retweets_path,
         )
-        dataset.load()
+        dataset.load(sample_probability=0.01)
         utils.write_object_to_pickle_file(dataset_pkl, dataset)
 
     dags_path = "{}/dags".format(args.output_dir)
