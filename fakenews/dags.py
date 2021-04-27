@@ -55,6 +55,7 @@ def create_dag(dataset, tweet_id: str, min_retweets=5):
     if tweet.is_retweet: 
         raise ValueError('Dag cannot be created from a retweet')
 
+
     if len(tweet.retweeted_by) < min_retweets:
         return None
 
@@ -79,7 +80,12 @@ def create_dag(dataset, tweet_id: str, min_retweets=5):
         dag.vertex_attrs[cur]['delay'] = abs((cur.created_at-cur_retweet_of.created_at).total_seconds())
 
         previous.append(cur)
-    
+
+    if tweet.real: 
+        dag.graph_attrs['label'] = "real"
+    else:
+        dag.graph_attrs['label'] = "fake"       
+
     return dag
 
 
@@ -111,6 +117,8 @@ def postprocess_dag(dataset, dag):
 
         p_dag.add_edge(tweet_to_id[u], tweet_to_id[v])
 
+    p_dag.graph_attrs['label'] = dag.graph_attrs['label']
+
     return p_dag
 
 
@@ -126,3 +134,34 @@ def create_dags(dataset, min_retweets=5):
                 yield postprocess_dag(dataset, dag)
 
 
+
+def dag_to_json(dag):
+    out = "{"
+    out += "\"label\":\"{}\"".format(dag.graph_attrs['label'])
+    out += ",\"nodes\":["
+    first = True
+    for v in dag.vertices:
+        if first: 
+            first = False
+        else:
+            out += ","
+        out += "{"    
+        out += "\"id\":\"{}\"".format(v)
+        for k, v in dag.vertex_attrs[v].items():
+            out += ",\"{}\":\"{}\"".format(k, v)
+        out += "}"        
+    out += "]"
+    out += ",\"edges\":["
+    first = True
+    for e in dag.edges:
+        if first: 
+            first = False
+        else:
+            out += ","
+        out += "{"
+        out += "\"source\":\"{}\"".format(dag.edge_source(e))
+        out += ",\"target\":\"{}\"".format(dag.edge_target(e))
+        out += "}"
+    out += "]"
+    out += "}"
+    return out

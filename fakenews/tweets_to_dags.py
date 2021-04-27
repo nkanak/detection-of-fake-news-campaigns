@@ -12,10 +12,8 @@ import jgrapht
 import logging
 import utils
 
-from jgrapht.io.exporters import write_json
-
 from dataset import FakeNewsDataset
-from dags import create_dags
+from dags import create_dags, dag_to_json
 
 
 def run(args):
@@ -47,7 +45,8 @@ def run(args):
     os.makedirs(dags_path, exist_ok=True)
     for i, dag in enumerate(create_dags(dataset)):
         dag_path = os.path.join(dags_path, "dag-{}.json".format(i))
-        write_json(dag, dag_path)
+        with open(dag_path, 'wt') as dag_file:
+            dag_file.write(dag_to_json(dag))
 
 
 if __name__ == "__main__":

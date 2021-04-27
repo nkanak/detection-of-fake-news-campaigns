@@ -90,7 +90,7 @@ def create_user_labels_df(user_ids, user_labels_dir):
                 labels.append(0)
             count2 += 1
     df = pd.DataFrame(labels, index=indexes, columns=['label'])
-    print('We set random label to %s users' % (count1))
+    print('We set zero label to missing %s users' % (count1))
     print('We set correct labels to %s users' % (count2))
     return df
 
