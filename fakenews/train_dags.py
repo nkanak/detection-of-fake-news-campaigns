@@ -13,7 +13,10 @@ import torch
 import torch.nn.functional as F
 from torch_geometric.data import Dataset, Data, DataLoader
 from torch_geometric.nn import GATConv, global_mean_pool
+
 from sklearn.metrics import f1_score
+from sklearn.model_selection import train_test_split
+
 from tqdm import tqdm
 
 
@@ -135,14 +138,12 @@ def run(args):
     dataset_size = len(data_list)
     logging.info("Loaded {} dags".format(dataset_size))
 
-    train_size= int(0.8 * dataset_size)
-    train_dataset = data_list[:train_size]
-    val_dataset = data_list[train_size:]
+    train_dataset, test_dataset = train_test_split(data_list, test_size=0.2, shuffle=True, random_state=1)
+    train_dataset, val_dataset = train_test_split(train_dataset, test_size=0.25, shuffle=False, random_state=1)
 
-    # TODO: add test dataset
-
-    train_loader = DataLoader(train_dataset, shuffle=True, batch_size=1)
-    val_loader = DataLoader(val_dataset, shuffle=True, batch_size=1)
+    train_loader = DataLoader(train_dataset, batch_size=1)
+    val_loader = DataLoader(val_dataset, batch_size=1)
+    test_loader = DataLoader(test_dataset, batch_size=1)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = Net(num_features=208, num_classes=2).to(device)
@@ -156,9 +157,8 @@ def run(args):
         val_f1 = test(model, val_loader, device)
         print('Epoch: {:02d}, Loss: {:.4f}, Val: {:.4f}'.format(epoch, loss, val_f1))        
 
-    # TODO: perform test
-    #test_f1 = test(model, test_loader, device)
-    #print('Val: {:.4f}'.format(test_f1))
+    test_f1 = test(model, test_loader, device)
+    print('Val: {:.4f}'.format(test_f1))
     
 
 
