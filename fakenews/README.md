@@ -37,6 +37,21 @@ Compute using
 
 you should get a directory `../raw_data/user_labels` containing one json file per user. 
 
+## Compute dags (trees)
+
+Generate dags
+
+```
+./tweets_to_dags.py --input-dir=../raw_data --output-dir=../raw_data
+```
+
+Υοu can also generate dags only using the user identifiers.
+
+```
+./tweets_to_dags.py --input-dir=../raw_data --output-dir=../raw_data --only-user-ids=True
+```
+
+
 
 ## Train a Graph Neural Network
 

@@ -43,7 +43,7 @@ def run(args):
     dags_path = "{}/dags".format(args.output_dir)
     logging.info("Writing dags to: {}".format(dags_path))
     os.makedirs(dags_path, exist_ok=True)
-    for i, dag in enumerate(create_dags(dataset)):
+    for i, dag in enumerate(create_dags(dataset, only_user_ids=args.only_user_ids)):
         dag_path = os.path.join(dags_path, "dag-{}.json".format(i))
         with open(dag_path, 'wt') as dag_file:
             dag_file.write(dag_to_json(dag))
@@ -78,5 +78,12 @@ if __name__ == "__main__":
         type=str,
         required=True,
     )
+    parser.add_argument(
+        "--only-user-ids",
+        help="Output only the user identifiers as information on the dags",
+        dest="only_user_ids",
+        type=bool,
+        default=False,
+    )    
     args = parser.parse_args()
     run(args)
