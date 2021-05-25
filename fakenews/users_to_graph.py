@@ -26,11 +26,66 @@ def strip_user_profile(user_profile:Dict, embedder: embeddings.UserEmbedder) -> 
         user['embedding_%s' % (i)] = dimension_value
     return user
 
+def build_graphs():
+    with open(os.path.join(args.dataset_root, "train_user_ids.json")) as f:
+        train_user_ids = json.load(f)["user_ids"]
+    train_graph = build_initial_graph(train_user_ids)
+    logging.info("Created train graph with {} vertices".format(train_graph.number_of_vertices))
+    logging.info("Created train graph with {} edges".format(train_graph.number_of_edges))
 
-def build_initial_graph():
+    logging.info("Create train edges df")
+    edges_df = edges_to_df(train_graph)
+    logging.info("Writing train edges to pickle file")
+    utils.write_object_to_pickle_file(os.path.join(args.dataset_root, "train_edges.pkl"), edges_df)
+    del edges_df
+    logging.info("Create train vertices df")
+    vertices_df = vertices_to_df(train_graph)
+    del train_graph
+    logging.info("Writing train vertices to pickle file")
+    utils.write_object_to_pickle_file(os.path.join(args.dataset_root, "train_vertices.pkl"), vertices_df)
+    del vertices_df
+
+    with open(os.path.join(args.dataset_root, "val_user_ids.json")) as f:
+        val_user_ids = json.load(f)["user_ids"]
+    val_graph = build_initial_graph(val_user_ids)
+    logging.info("Created val graph with {} vertices".format(val_graph.number_of_vertices))
+    logging.info("Created val graph with {} edges".format(val_graph.number_of_edges))
+
+    logging.info("Create edges df")
+    edges_df = edges_to_df(val_graph)
+    logging.info("Writing val edges to pickle file")
+    utils.write_object_to_pickle_file(os.path.join(args.dataset_root, "val_edges.pkl"), edges_df)
+    del edges_df
+    logging.info("Create val vertices df")
+    vertices_df = vertices_to_df(val_graph)
+    del val_graph
+    logging.info("Writing val vertices to pickle file")
+    utils.write_object_to_pickle_file(os.path.join(args.dataset_root, "val_vertices.pkl"), vertices_df)
+    del vertices_df
+
+    with open(os.path.join(args.dataset_root, "test_user_ids.json")) as f:
+        test_user_ids = json.load(f)["user_ids"]
+    test_graph = build_initial_graph(test_user_ids)
+    logging.info("Created test graph with {} vertices".format(test_graph.number_of_vertices))
+    logging.info("Created test graph with {} edges".format(test_graph.number_of_edges))
+
+    logging.info("Create test edges df")
+    edges_df = edges_to_df(test_graph)
+    logging.info("Writing test edges to pickle file")
+    utils.write_object_to_pickle_file(os.path.join(args.dataset_root, "test_edges.pkl"), edges_df)
+    del edges_df
+    logging.info("Create test vertices df")
+    vertices_df = vertices_to_df(test_graph)
+    del test_graph
+    logging.info("Writing test vertices to pickle file")
+    utils.write_object_to_pickle_file(os.path.join(args.dataset_root, "test_vertices.pkl"), vertices_df)
+    del vertices_df
+
+def build_initial_graph(node_ids):
     """Read user profiles from a json directory and create a first basic
     graph where users are vertices and edges correspond to 'follower' relationships.
     """
+    node_ids = set(node_ids)
     logging.info("Creating graph from users")
     glove_embeddings = utils.load_glove_embeddings(args.embeddings_file)
     embedder = embeddings.UserEmbedder(glove_embeddings=glove_embeddings)
@@ -51,6 +106,9 @@ def build_initial_graph():
             with open(fentry.path) as json_file:
                 user_profile = json.load(json_file)
                 user = strip_user_profile(user_profile, embedder)
+                if not str(user["id"]) in node_ids:
+                    continue
+
                 v = g.add_vertex(user["id"])
                 g.vertex_attrs[v].update(**user)
 
@@ -59,6 +117,10 @@ def build_initial_graph():
         if fentry.path.endswith(".json") and fentry.is_file():
             with open(fentry.path) as json_file:
                 user_followers = json.load(json_file)
+
+                if not str(user_followers["user_id"]) in node_ids:
+                    continue
+
                 if g.contains_vertex(user_followers["user_id"]) is False:
                     continue
                     user_profile = {"id": user_followers["user_id"], "description": ""}
@@ -67,6 +129,9 @@ def build_initial_graph():
                     g.vertex_attrs[v].update(**user)
 
                 for follower in user_followers["followers"]:
+                    if not str(follower) in node_ids:
+                        continue
+
                     if g.contains_vertex(follower) is False:
                         continue
                         user_profile = {"id": follower, "description": ""}
@@ -75,9 +140,6 @@ def build_initial_graph():
                         g.vertex_attrs[v].update(**user)
 
                     g.add_edge(follower, user_followers["user_id"])
-
-    logging.info("Created graph with {} vertices".format(g.number_of_vertices))
-    logging.info("Created graph with {} edges".format(g.number_of_edges))
 
     return g
 
@@ -115,18 +177,7 @@ def vertices_to_df(g):
 
 
 def run(args):
-    g = build_initial_graph()
-    logging.info("Create edges df")
-    edges_df = edges_to_df(g)
-    logging.info("Writing edges to pickle file")
-    utils.write_object_to_pickle_file('edges.pkl', edges_df)
-    del edges_df
-    logging.info("Create vertices df")
-    vertices_df = vertices_to_df(g)
-    del g
-    logging.info("Writing vertices to pickle file")
-    utils.write_object_to_pickle_file('vertices.pkl', vertices_df)
-    del vertices_df
+    build_graphs()
     
 if __name__ == "__main__":
     logging.basicConfig(
@@ -144,12 +195,12 @@ if __name__ == "__main__":
         type=str,
         default="raw_data",
     )
+
     parser.add_argument(
-        "--output-file",
-        help="Output filename to export the graph",
-        dest="output_file",
-        type=str,
-        default="users_graph.json",
+        "--dataset-root",
+        help="Dataset root path",
+        dest="dataset_root",
+        type=str
     )
     parser.add_argument(
         "--embeddings-file",

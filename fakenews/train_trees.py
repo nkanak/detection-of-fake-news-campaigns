@@ -3,10 +3,7 @@
 import logging
 import argparse
 import jgrapht
-from jgrapht.utils import IntegerSupplier
-import numpy as np
 import json
-import utils
 import os
 
 import torch
@@ -14,13 +11,13 @@ import torch.nn.functional as F
 from torch_geometric.data import Dataset, Data, DataLoader
 from torch_geometric.nn import GATConv, global_mean_pool
 
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 from sklearn.model_selection import train_test_split
 
 from tqdm import tqdm
 
 
-def dag_to_data(filename, ignore_attributes={"ID"}, embeddings_dimensions=200):
+def tree_to_data(filename):
     logging.debug("Reading {}".format(filename))
 
     # read label
@@ -30,37 +27,12 @@ def dag_to_data(filename, ignore_attributes={"ID"}, embeddings_dimensions=200):
         # 0 = true, 1 = fake
         is_fake = label == "fake"
 
-    # read graph
-    g = jgrapht.create_graph()
-    vattrs = {}
-
-    def vattrs_cb(v, key, value):
-        if v not in vattrs:
-            vattrs[v] = {}
-        vattrs[v][key] = value
-
-    jgrapht.io.importers.read_json(g, filename, vertex_attribute_cb=vattrs_cb)
-
     vfeatures = []
-    for v in g.vertices:
+    for node in data['nodes']:
         as_list = []
-
-        for key in [
-            "delay",
-            "protected",
-            "following_count",
-            "listed_count",
-            "statuses_count",
-            "followers_count",
-            "favourites_count",
-            "verified",
-        ]:
-            as_list.append(float(vattrs[v][key]))
-
-        if "user_profile_embedding" in vattrs[v]:
-            as_list.extend(json.loads(vattrs[v]["user_profile_embedding"]))
-        else:
-            as_list.extend([0] * embeddings_dimensions)
+        for key in ["delay", "protected", "following_count", "listed_count", "statuses_count", "followers_count", "favourites_count", "verified",]:
+            as_list.append(float(node[key]))
+        as_list.extend(node["embedding"])
         vfeatures.append(as_list)
 
     vlabels = []
@@ -68,16 +40,17 @@ def dag_to_data(filename, ignore_attributes={"ID"}, embeddings_dimensions=200):
 
     edge_sources = []
     edge_targets = []
-    for e in g.edges:
-        edge_sources.append(g.edge_source(e))
-        edge_targets.append(g.edge_target(e))
+    for e in data['edges']:
+        edge_sources.append(e['source'])
+        edge_targets.append(e['target'])
 
     x = torch.tensor(vfeatures, dtype=torch.float)
     edge_index = torch.tensor([edge_sources, edge_targets], dtype=torch.long)
     y = torch.tensor(vlabels, dtype=torch.long)
     result = Data(x=x, edge_index=edge_index, y=y)
 
-    return result
+    number_of_features = len(vfeatures[0])
+    return number_of_features, result
 
 
 class Net(torch.nn.Module):
@@ -123,30 +96,41 @@ def test(model, loader, device):
 
     y = torch.cat(ys, dim=0).numpy()
     pred = torch.cat(preds, dim=0).numpy()
-    return f1_score(y, pred, average='micro') if pred.sum() > 0 else 0
+    test_f1 = f1_score(y, pred, average='micro') if pred.sum() > 0 else 0
+    test_precision = precision_score(y, pred) if pred.sum() > 0 else 0
+    test_recall = recall_score(y, pred)
+    test_accuracy = accuracy_score(y, pred)
+
+    return test_f1, test_precision, test_recall, test_accuracy
 
 
 def run(args):
 
     logging.info("Loading dags dataset")
 
-    data_list = []
-    for fentry in os.scandir(args.input_dir):
-        if fentry.path.endswith(".json") and fentry.is_file():
-            data = dag_to_data(fentry.path)            
-            data_list.append(data)
-    dataset_size = len(data_list)
-    logging.info("Loaded {} dags".format(dataset_size))
+    train_path = os.path.join(args.dataset_root, 'train')
+    val_path = os.path.join(args.dataset_root, 'val')
+    test_path = os.path.join(args.dataset_root, 'test')
 
-    train_dataset, test_dataset = train_test_split(data_list, test_size=0.2, shuffle=True, random_state=1)
-    train_dataset, val_dataset = train_test_split(train_dataset, test_size=0.25, shuffle=False, random_state=1)
+    datasets = []
+    for path in [train_path, val_path, test_path]:
+        dataset = []
+        for fentry in os.scandir(path):
+            if fentry.path.endswith(".json") and fentry.is_file():
+                number_of_features, t = tree_to_data(fentry.path)
+                dataset.append(t)
+        datasets.append(dataset)
 
-    train_loader = DataLoader(train_dataset, batch_size=1)
-    val_loader = DataLoader(val_dataset, batch_size=1)
-    test_loader = DataLoader(test_dataset, batch_size=1)
+    train_loader = DataLoader(datasets[0], batch_size=1)
+    val_loader = DataLoader(datasets[1], batch_size=4)
+    test_loader = DataLoader(datasets[2], batch_size=4)
 
+    logging.info('Train dataset size: %s ' % len(train_loader))
+    logging.info('Validation dataset size: %s ' % len(val_loader))
+    logging.info('Test dataset size: %s' % len(test_loader))
+    
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = Net(num_features=208, num_classes=2).to(device)
+    model = Net(num_features=number_of_features, num_classes=2).to(device)
     loss_op = torch.nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.005)    
 
@@ -154,11 +138,11 @@ def run(args):
     for epoch in range(1, 101):
         logging.info("Starting epoch {}".format(epoch))
         loss = train(model, train_loader, device, optimizer, loss_op)
-        val_f1 = test(model, val_loader, device)
-        print('Epoch: {:02d}, Loss: {:.4f}, Val: {:.4f}'.format(epoch, loss, val_f1))        
+        val_f1, val_precision, val_recall, val_accuracy = test(model, val_loader, device)
+        print('Epoch: {:02d}, Loss: {:.4f}, Val F1: {:.4f} Val Prec: {:.4f} Val Rec: {:.4f} Val Acc: {:.4f}'.format(epoch, loss, val_f1, val_precision, val_recall, val_accuracy))
 
-    test_f1 = test(model, test_loader, device)
-    print('Val: {:.4f}'.format(test_f1))
+    test_f1, test_precision, test_recall, test_accuracy = test(model, test_loader, device)
+    print('F1: %s Precision: %s Recall: %s Accuracy: %s' % (test_f1, test_precision, test_recall, test_accuracy))
     
 
 
@@ -171,16 +155,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(epilog="Example: python train_dags.py")
     parser.add_argument(
-        "--input-dir",
-        help="Input directory containing the fakenewsnet dataset",
-        dest="input_dir",
-        type=str,
-        required=True,
-    )
-    parser.add_argument(
-        "--output-dir",
-        help="Output directory to exports the dags",
-        dest="output_dir",
+        "--dataset-root",
+        help="Dataset root",
+        dest="dataset_root",
         type=str,
         required=True,
     )

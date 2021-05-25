@@ -6,15 +6,10 @@
 
 import argparse
 import json
-import time
 import os
-import jgrapht
 import logging
 
-from models import Tweet, User
-
-
-class UserLabels: 
+class UserLabels:
     def __init__(
         self,
         real_news_retweets_path,
@@ -88,7 +83,7 @@ def run(args):
     logging.info("Loading dataset")
 
     user_profiles_path = "{}/user_profiles".format(args.input_dir)
-    user_labels_path = "{}/user_labels".format(args.output_dir)
+    user_labels_path = "produced_data/user_labels"
     real_news_retweets_path = "{}/{}/real".format(args.input_dir, args.website)
     fake_news_retweets_path = "{}/{}/fake".format(args.input_dir, args.website)
 
@@ -126,13 +121,6 @@ if __name__ == "__main__":
         dest="website",
         type=str,
         default="politifact",
-    )
-    parser.add_argument(
-        "--output-dir",
-        help="Output directory to exports the user labels",
-        dest="output_dir",
-        type=str,
-        required=True
     )
     args = parser.parse_args()
     run(args)

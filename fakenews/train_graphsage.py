@@ -12,6 +12,8 @@ from tensorflow.keras import layers, Model, optimizers
 from sklearn import preprocessing, model_selection
 import utils
 import tensorflow
+import os
+import json
 
 
 def infer(embedding_model, vertices_df, edges_df, batch_size, num_samples):
@@ -24,61 +26,44 @@ def infer(embedding_model, vertices_df, edges_df, batch_size, num_samples):
     return emb
 
 def run(args):
-    edges_df =  utils.read_pickle_from_file('edges.pkl')
-    vertices_df = utils.read_pickle_from_file('vertices.pkl')
-    vertices_df.drop(['id'], inplace=True, axis=1)
-    user_labels_dir = args.user_labels_dir
-    labels = utils.create_user_labels_df(list(vertices_df.index), user_labels_dir)['label']
-    print('###### Total labels value counts')
-    print(labels.value_counts())
-    labels_sampled = labels.sample(frac=0.8, replace=False, random_state=100)
-    vertices_df_sampled = vertices_df.sample(frac=0.8, replace=False, random_state=100)
-    edges_df_sampled = edges_df.sample(frac=0.8, replace=False, random_state=100)
-    edges_df_sampled = edges_df_sampled[edges_df_sampled['source'].isin(vertices_df_sampled.index.tolist())]
-    edges_df_sampled = edges_df_sampled[edges_df_sampled['target'].isin(vertices_df_sampled.index.tolist())]
+    user_labels_dir = 'produced_data/user_labels'
 
-    print('###### Labels sampled value counts')
-    print(labels_sampled.value_counts())
-    train_labels, test_labels = model_selection.train_test_split(
-        labels_sampled,
-        train_size=None,
-        test_size=0.33,
-        stratify=labels_sampled,
-        random_state=100,
-    )
-    val_labels, test_labels = model_selection.train_test_split(
-        test_labels,
-        train_size=0.2,
-        test_size=None,
-        stratify=test_labels,
-        random_state=100,
-    )
-
-    print('###### Labels train value counts')
+    train_edges_df = utils.read_pickle_from_file(os.path.join(args.dataset_root, "train_edges.pkl"))
+    train_vertices_df = utils.read_pickle_from_file(os.path.join(args.dataset_root, "train_vertices.pkl"))
+    train_vertices_df.drop(['id'], inplace=True, axis=1)
+    train_labels = utils.create_user_labels_df(list(train_vertices_df.index), user_labels_dir)['label']
+    print('###### Total train labels value counts')
     print(train_labels.value_counts())
-    print('###### Labels test value counts')
-    print(test_labels.value_counts())
-    print('###### Labels val value counts')
+
+    val_edges_df = utils.read_pickle_from_file(os.path.join(args.dataset_root, "val_edges.pkl"))
+    val_vertices_df = utils.read_pickle_from_file(os.path.join(args.dataset_root, "val_vertices.pkl"))
+    val_vertices_df.drop(['id'], inplace=True, axis=1)
+    val_labels = utils.create_user_labels_df(list(val_vertices_df.index), user_labels_dir)['label']
+    print('###### Total val labels value counts')
     print(val_labels.value_counts())
+
+    test_edges_df = utils.read_pickle_from_file(os.path.join(args.dataset_root, "test_edges.pkl"))
+    test_vertices_df = utils.read_pickle_from_file(os.path.join(args.dataset_root, "test_vertices.pkl"))
+    test_vertices_df.drop(['id'], inplace=True, axis=1)
+    test_labels = utils.create_user_labels_df(list(test_vertices_df.index), user_labels_dir)['label']
+    print('###### Total test labels value counts')
+    print(test_labels.value_counts())
 
     target_encoding = preprocessing.LabelBinarizer()
     train_targets = target_encoding.fit_transform(train_labels)
     val_targets = target_encoding.transform(val_labels)
     test_targets = target_encoding.transform(test_labels)
 
-    print('###### Create StellarGraph graph')
-    print(edges_df_sampled)
-    print(vertices_df_sampled)
-    graph_sampled = StellarGraph(vertices_df_sampled, edges_df_sampled, edge_type_default='follows', node_type_default='user')
-    print(graph_sampled.info())
+    train_graph = StellarGraph(train_vertices_df, train_edges_df, edge_type_default='follows', node_type_default='user')
+    print(train_graph.info())
 
     batch_size = 100
     num_samples = [20, 10]
-    generator = GraphSAGENodeGenerator(graph_sampled, batch_size, num_samples)
-    train_gen = generator.flow(list(train_labels.index), train_targets, shuffle=True)
+    train_generator = GraphSAGENodeGenerator(train_graph, batch_size, num_samples)
+    train_gen = train_generator.flow(list(train_labels.index), train_targets, shuffle=True)
 
     graphsage_model = GraphSAGE(
-        layer_sizes=[32, 15], generator=generator, bias=True, dropout=0.5, activations=['relu', 'relu']
+        layer_sizes=[32, 15], generator=train_generator, bias=True, dropout=0.5, activations=['relu', 'relu']
     )
     x_inp, x_out = graphsage_model.in_out_tensors()
     if train_targets.shape[1] == 1:
@@ -100,39 +85,54 @@ def run(args):
         loss=loss,
         metrics=metrics,
     )
-    val_gen = generator.flow(val_labels.index, val_targets)
+
+    val_graph = StellarGraph(val_vertices_df, val_edges_df, edge_type_default='follows', node_type_default='user')
+    val_generator = GraphSAGENodeGenerator(val_graph, batch_size, num_samples)
+    val_gen = val_generator.flow(val_labels.index, val_targets)
     history = model.fit(
-        train_gen, epochs=1, validation_data=val_gen, verbose=1, shuffle=False
+        train_gen, epochs=args.epochs, validation_data=val_gen, verbose=1, shuffle=False
     )
 
-    test_gen = generator.flow(test_labels.index, test_targets)
+    test_graph = StellarGraph(test_vertices_df, test_edges_df, edge_type_default='follows', node_type_default='user')
+    test_generator = GraphSAGENodeGenerator(test_graph, batch_size, num_samples)
+    test_gen = test_generator.flow(test_labels.index, test_targets)
     test_metrics = model.evaluate(test_gen)
     for name, val in zip(model.metrics_names, test_metrics):
         print("\t{}: {:0.4f}".format(name, val))
 
-    hold_out_vertices_df = vertices_df[~vertices_df.index.isin(vertices_df_sampled.index)]
-    hold_out_edges_df = edges_df[edges_df['source'].isin(hold_out_vertices_df.index.tolist())]
-    hold_out_edges_df = hold_out_edges_df[hold_out_edges_df['target'].isin(hold_out_vertices_df.index.tolist())]
-
-    utils.write_object_to_pickle_file('hold_out_vertices_df.pkl', hold_out_vertices_df)
-    utils.write_object_to_pickle_file('hold_out_edges_df.pkl', hold_out_edges_df)
     embedding_model_filename = 'users_embedding_%s_%s_model' % (batch_size, '_'.join([str(i) for i in num_samples]))
     print('Saving embedding_model: %s' % (embedding_model_filename))
     embedding_model = Model(inputs=x_inp, outputs=x_out)
     embedding_model.save(embedding_model_filename)
 
-    print(infer(embedding_model, hold_out_vertices_df, hold_out_edges_df, batch_size, num_samples))
+    print('Saving users embeddings lookup file')
+    embeddings_lookup = {}
+    for vertices, edges in [(train_vertices_df, train_edges_df), (val_vertices_df, val_edges_df), (test_vertices_df, test_edges_df)]:
+        embeddings = infer(embedding_model, vertices, edges, batch_size, num_samples)
+        for i, index in enumerate(list(vertices.index)):
+            embeddings_lookup[index] = embeddings[i].tolist()
+    with open(os.path.join(args.dataset_root, 'users_graphsage_embeddings_lookup.json'), 'w') as f:
+        json.dump(embeddings_lookup, f, indent=2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        epilog="Example: python train_graphsage.py --user-labels-dir ../raw_data/user_labels"
+        epilog="Example: python train_graphsage.py"
     )
     parser.add_argument(
-        "--user-labels-dir",
-        help="Directory of user labels",
-        dest="user_labels_dir",
+        "--dataset-root",
+        help="Directory of the dataset",
+        dest="dataset_root",
         type=str,
         required=True
     )
+
+    parser.add_argument(
+        "--epochs",
+        help="Number of epochs",
+        dest="epochs",
+        type=int,
+        default=5
+    )
+
     args = parser.parse_args()
     run(args)

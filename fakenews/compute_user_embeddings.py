@@ -6,14 +6,13 @@
 
 import argparse
 import json
-import time
 import os
-import jgrapht
 import logging
 
 import models 
 import embeddings
 import utils
+import numpy as np
 
 from tqdm import tqdm
 
@@ -24,10 +23,14 @@ class UserProfiles:
         user_profiles_path,
         user_embeddings_path,
         embeddings_file,
+        users_embeddings_lookup,
+        not_in_lookup_embedding
     ):
         self._user_profiles_path = user_profiles_path
         self._user_embeddings_path = user_embeddings_path
         self._embeddings_file = embeddings_file
+        self._users_embeddings_lookup = users_embeddings_lookup
+        self._not_in_lookup_embedding = not_in_lookup_embedding
 
 
     def _strip_user_profile(self, user_profile, embedder):
@@ -37,12 +40,14 @@ class UserProfiles:
 
         user = {}
         user['id'] = user_profile.id
-        user["embedding"] = embedder.embed(user_profile).tolist()
+        graphsage_embedding = self._users_embeddings_lookup.get(str(user['id']), None)
+        if graphsage_embedding is None:
+            graphsage_embedding = self._not_in_lookup_embedding.tolist()
+        user["embedding"] = embedder.embed(user_profile).tolist() + graphsage_embedding
         return user
 
 
     def run(self):
-
         # Create output dir
         logging.info("Will output user embeddings to {}".format(self._user_embeddings_path))
         os.makedirs(self._user_embeddings_path, exist_ok=True)
@@ -68,12 +73,18 @@ def run(args):
     logging.info("Loading dataset")
 
     user_profiles_path = "{}/user_profiles".format(args.input_dir)
-    user_embeddings_path = "{}/user_embeddings".format(args.output_dir)
+    user_embeddings_path = "{}/user_embeddings".format(args.dataset_root)
+
+    logging.info("Loading users embeddings graphsage lookup")
+    with open(os.path.join(args.dataset_root, "users_graphsage_embeddings_lookup.json")) as f:
+        users_embeddings_lookup = json.load(f)
 
     dataset = UserProfiles(
         user_profiles_path=user_profiles_path,
         user_embeddings_path=user_embeddings_path,
-        embeddings_file=args.embeddings_file
+        embeddings_file=args.embeddings_file,
+        users_embeddings_lookup=users_embeddings_lookup,
+        not_in_lookup_embedding=np.zeros(len(list(users_embeddings_lookup.values())[0]))
     )
 
     dataset.run()
@@ -97,9 +108,9 @@ if __name__ == "__main__":
         required=True
     )
     parser.add_argument(
-        "--output-dir",
+        "--dataset-root",
         help="Output directory to export",
-        dest="output_dir",
+        dest="dataset_root",
         type=str,
         required=True
     )
