@@ -138,7 +138,7 @@ def get_user_id(tweet_dict):
         raise ValueError("Failed to parse user in tweet: {}".format(tweet_dict))
     return user_id
 
-def create_tree(tweet_dict, min_retweets=5): 
+def create_tree(tweet_dict, min_retweets): 
     real = tweet_dict["label"] == "real"
     tweet = create_tweet(tweet_dict, real=real)
     tweet.user = load_user_from_disk(get_user_id(tweet_dict))
@@ -230,7 +230,7 @@ def run(args):
         tweet_path = fentry.path
         with open(tweet_path) as json_file:
             tweet_dict = json.load(json_file)
-            tree = create_tree(tweet_dict)
+            tree = create_tree(tweet_dict, min_retweets=8)
             if tree is not None:
                 if count % 25 == 0: 
                     logging.info("{}".format(count))

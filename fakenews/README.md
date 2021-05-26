@@ -45,20 +45,13 @@ First you need to preprocess the dataset using
 ./dataset_preprocess.py
 ```
 
-This will create a folder `tweets1`.
-
-Generate tweets
+This will create a folder `tweets1`. Then run 
 
 ```
-./tweets_to_dags.py --input-dir=../raw_data --output-dir=../raw_data
+./create_trees.py
 ```
 
-Υοu can also generate dags only using the user identifiers.
-
-```
-./tweets_to_dags.py --input-dir=../raw_data --output-dir=../raw_data --only-user-ids=True
-```
-
+which will create a folder `trees2`.
 
 
 ## Train a Graph Neural Network
