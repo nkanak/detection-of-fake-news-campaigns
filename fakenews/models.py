@@ -9,6 +9,7 @@ class Tweet:
         self._retweet_of = None
         self._retweeted_by = []
         self._real = None
+        self._rtusername = None
 
     @property
     def id(self):
@@ -45,6 +46,14 @@ class Tweet:
     @user.setter
     def user(self, value):
         self._user = value
+
+    @property
+    def rtusername(self):
+        return self._rtusername
+
+    @rtusername.setter
+    def rtusername(self, value):
+        self._rtusername = value
 
     @property
     def is_retweet(self):

@@ -15,7 +15,8 @@ def _find_retweet_source(dataset, retweet, previous_retweets):
     retweet it originated.
     """
     user = retweet.user
-    rt_username = _lookup_RT(retweet.text)
+    #rt_username = _lookup_RT(retweet.text)
+    rt_username = retweet.rtusername
 
     # Find a tweet from the RT user
     if rt_username is not None:

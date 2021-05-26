@@ -35,7 +35,8 @@ def run(args):
             real_news_retweets_path=real_news_retweets_path,
             fake_news_retweets_path=fake_news_retweets_path,
         )
-        dataset.load(sample_probability=args.sample_probability)
+        #dataset.load(sample_probability=args.sample_probability)
+        dataset.load()
         utils.write_object_to_pickle_file(dataset_pkl, dataset)
 
     trees_path = "produced_data/trees"

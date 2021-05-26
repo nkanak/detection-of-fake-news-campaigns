@@ -85,7 +85,8 @@ class FakeNewsDataset:
         tweet.created_at = datetime.strptime(
             tweet_dict["created_at"], "%a %b %d %H:%M:%S %z %Y"
         )
-        tweet.text = tweet_dict["text"]
+        #tweet.text = tweet_dict["text"]
+        tweet.rtusername = utils.lookup_RT(tweet_dict["text"])
 
         # load tweet user
         if "user" in tweet_dict:

@@ -2,6 +2,7 @@ import os
 import json
 import pickle
 import random
+import re
 import numpy as np
 from typing import List, Dict
 from nltk.tokenize import word_tokenize
@@ -104,3 +105,10 @@ def create_json_files_iterator(path, sample_probability=None):
                     continue
             allfiles.append(fentry.path)
     return allfiles
+
+
+def lookup_RT(text):
+    match = re.search(r'RT\s@((\w){1,15}):', text)
+    if match: 
+        return match.group(1)
+    return None
