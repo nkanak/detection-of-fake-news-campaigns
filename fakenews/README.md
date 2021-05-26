@@ -37,9 +37,17 @@ Compute using
 
 you should get a directory `../raw_data/user_labels` containing one json file per user. 
 
-## Compute dags (trees)
+## Compute trees
 
-Generate dags
+First you need to preprocess the dataset using 
+
+```
+./dataset_preprocess.py
+```
+
+This will create a folder `tweets1`.
+
+Generate tweets
 
 ```
 ./tweets_to_dags.py --input-dir=../raw_data --output-dir=../raw_data
