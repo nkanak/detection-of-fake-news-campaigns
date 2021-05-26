@@ -24,6 +24,8 @@ from datetime import datetime
 
 USER_PROFILES_PATH = "../raw_data/user_profiles"
 USER_FOLLOWERS_PATH = "../raw_data/user_followers"
+MISSING_USER_PROFILES_PATH = "missing_user_profiles"
+TREES_PATH = "trees2"
 
 def _lookup_RT(text):
     match = re.search(r'RT\s@((\w){1,15}):', text)
@@ -63,15 +65,14 @@ def _find_retweet_source(retweet, previous_retweets):
     return random.choices(previous_retweets, weights=weights, k=1)[0]
 
 
-
-
-
 def load_user_from_disk(user_id):
     #print("Looking for user {}".format(user_id))
     user = models.User(user_id)
 
     user_filename = "{}/{}.json".format(USER_PROFILES_PATH, user_id)
     if not os.path.exists(user_filename): 
+        with open("{}/{}.json".format(MISSING_USER_PROFILES_PATH, user_id), "wt") as json_file:
+            json.dump({ "id": user_id }, json_file)
         return user
 
     # load user from file
@@ -222,8 +223,9 @@ def run(args):
     random.seed(31)
 
     logging.info("Creating trees")
-    output_path = "trees2"
-    os.makedirs(output_path, exist_ok=True)
+    os.makedirs(TREES_PATH, exist_ok=True)
+    os.makedirs(MISSING_USER_PROFILES_PATH, exist_ok=True)
+    
 
     count = 0
     for fentry in os.scandir(args.tweets):
@@ -235,7 +237,7 @@ def run(args):
                 if count % 25 == 0: 
                     logging.info("{}".format(count))
                 tree = postprocess_tree(tree)
-                tree_path = os.path.join(output_path, "trees-{}.json".format(count))
+                tree_path = os.path.join(TREES_PATH, "trees-{}.json".format(count))
                 with open(tree_path, 'w') as tree_file:
                     json.dump(tree_to_dict(tree), tree_file, indent=2)
                     #tree_file.write(tree_to_json(tree))
