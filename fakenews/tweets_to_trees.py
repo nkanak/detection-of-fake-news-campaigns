@@ -18,7 +18,7 @@ def run(args):
 
     logging.info("Loading dataset")
 
-    dataset_pkl = "produced_data/tweets-to-dags-dataset.pkl"
+    dataset_pkl = "produced_data/tweets-to-trees-dataset.pkl"
     if not args.ignore_pkl and os.path.exists(dataset_pkl):
         logging.info("Loading dataset from: {}".format(dataset_pkl))
         dataset = utils.read_pickle_from_file(dataset_pkl)
