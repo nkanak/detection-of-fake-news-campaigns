@@ -135,33 +135,34 @@ class FakeNewsDataset:
     def _update_user_from_dict(self, user_dict):
         user = self._get_user(str(user_dict["id"]))
 
-        if user.screenname is None and "screen_name" in user_dict:
-            user.screenname = user_dict["screen_name"]
-            self._users_by_username[user.screenname] = user
+        if False:
+            if user.screenname is None and "screen_name" in user_dict:
+                user.screenname = user_dict["screen_name"]
+                self._users_by_username[user.screenname] = user
 
-        for key in [
-            "followers_count",
-            "listed_count",
-            "favourites_count",
-            "statuses_count",
-        ]:
-            current_value = getattr(user, key)
-            if current_value is None or current_value == 0:
-                setattr(user, key, user_dict.get(key, 0))
+            for key in [
+                "followers_count",
+                "listed_count",
+                "favourites_count",
+                "statuses_count",
+            ]:
+                current_value = getattr(user, key)
+                if current_value is None or current_value == 0:
+                    setattr(user, key, user_dict.get(key, 0))
 
-        for key in [
-            "verified",
-            "protected",
-        ]:
-            current_value = getattr(user, key)
-            if current_value is None or current_value is False:
-                setattr(user, key, user_dict.get(key, False))
+            for key in [
+                "verified",
+                "protected",
+            ]:
+                current_value = getattr(user, key)
+                if current_value is None or current_value is False:
+                    setattr(user, key, user_dict.get(key, False))
 
-        if user.following_count is None or user.following_count == 0:
-            user.following_count = user_dict.get("friends_count", 0)
+            if user.following_count is None or user.following_count == 0:
+                user.following_count = user_dict.get("friends_count", 0)
 
-        if user.description is None:
-            user.description = user_dict.get("description", None)
+            if user.description is None:
+                user.description = user_dict.get("description", None)
 
         return user
 

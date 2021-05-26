@@ -94,11 +94,11 @@ def postprocess_tree(tree):
 
         p_tree.vertex_attrs[vid]['user_id'] = tweet.user.id
         p_tree.vertex_attrs[vid]['delay'] = tree.vertex_attrs[tweet]['delay']
-        p_tree.vertex_attrs[vid]['followers_count'] = max(len(tweet.user.followers), tweet.user.followers_count)
-        p_tree.vertex_attrs[vid]['following_count'] =  max(len(tweet.user.following), tweet.user.following_count)
+        #p_tree.vertex_attrs[vid]['followers_count'] = max(len(tweet.user.followers), tweet.user.followers_count)
+        #p_tree.vertex_attrs[vid]['following_count'] =  max(len(tweet.user.following), tweet.user.following_count)
 
-        for key in ['verified', 'protected', 'favourites_count', 'listed_count', 'statuses_count']:
-            p_tree.vertex_attrs[vid][key] = int(getattr(tweet.user, key))
+        #for key in ['verified', 'protected', 'favourites_count', 'listed_count', 'statuses_count']:
+        #    p_tree.vertex_attrs[vid][key] = int(getattr(tweet.user, key))
 
         #if tweet.user.embedding is not None:
         #    p_tree.vertex_attrs[vid]['user_profile_embedding'] = tweet.user.embedding
