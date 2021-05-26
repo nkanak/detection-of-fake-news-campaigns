@@ -8,6 +8,7 @@ import argparse
 import os
 import logging
 import utils
+import random
 
 from dataset import FakeNewsDataset
 from trees import create_trees, tree_to_dict
@@ -15,6 +16,8 @@ import json
 
 
 def run(args):
+
+    random.seed(31)
 
     logging.info("Loading dataset")
 
