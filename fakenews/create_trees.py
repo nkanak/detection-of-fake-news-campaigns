@@ -78,6 +78,12 @@ def load_user_from_disk(user_id):
     # load user from file
     with open(user_filename) as json_file:
         user_dict = json.load(json_file)
+
+        # failed when downloading
+        if "done" in user_dict and user_dict["done"] == "ERROR": 
+            return user
+
+        #print(user_dict)
         if str(user_dict["id"]) != user_id:
             raise ValueError(
                 "Invalid userid {} in json files".format(str(user_dict["id"]))
