@@ -34,8 +34,12 @@ class UserProfiles:
 
 
     def _strip_user_profile(self, user_profile, embedder):
-        description = user_profile['description']
-        user_profile = models.User(user_profile['id'])
+        if 'done' in user_profile and user_profile['done'] !=  'OK':
+            description = ''
+            user_profile = models.User(int(user_profile['user_id']))
+        else:
+            description = user_profile['description']
+            user_profile = models.User(user_profile['id'])
         user_profile.description = description
 
         user = {}

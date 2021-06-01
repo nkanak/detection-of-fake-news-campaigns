@@ -15,8 +15,12 @@ import pandas as pd
 from tqdm import tqdm
 
 def strip_user_profile(user_profile:Dict, embedder: embeddings.UserEmbedder) -> Dict:
-    description = user_profile['description']
-    user_profile = models.User(user_profile['id'])
+    if 'done' in user_profile and user_profile['done'] !=  'OK':
+        description = ''
+        user_profile = models.User(int(user_profile['user_id']))
+    else:
+        description = user_profile['description']
+        user_profile = models.User(user_profile['id'])
     user_profile.description = description
 
     user = {}
@@ -122,7 +126,7 @@ def build_initial_graph(node_ids):
                     continue
 
                 if g.contains_vertex(user_followers["user_id"]) is False:
-                    continue
+                    #continue
                     user_profile = {"id": user_followers["user_id"], "description": ""}
                     user = strip_user_profile(user_profile, embedder)
                     v = g.add_vertex(user["id"])
@@ -133,7 +137,7 @@ def build_initial_graph(node_ids):
                         continue
 
                     if g.contains_vertex(follower) is False:
-                        continue
+                        #continue
                         user_profile = {"id": follower, "description": ""}
                         user = strip_user_profile(user_profile, embedder)
                         v = g.add_vertex(user["id"])
