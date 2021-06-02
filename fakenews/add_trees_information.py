@@ -35,7 +35,7 @@ def run(args):
                         user_embedding = json.load(f)
                     tree['nodes'][i]['embedding'] = user_embedding["embedding"]
             with open(os.path.join(path, fname), 'w') as f:
-                json.dump(tree, f, indent=2)
+                json.dump(tree, f)
 
 
 if __name__ == "__main__":

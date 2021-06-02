@@ -47,7 +47,7 @@ def run(args):
     for i, tree in enumerate(create_trees(dataset)):
         tree_path = os.path.join(trees_path, "trees-{}.json".format(i))
         with open(tree_path, 'w') as tree_file:
-            json.dump(tree_to_dict(tree), tree_file, indent=2)
+            json.dump(tree_to_dict(tree), tree_file)
             #tree_file.write(tree_to_json(tree))
 
 

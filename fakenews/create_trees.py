@@ -245,7 +245,7 @@ def run(args):
                 tree = postprocess_tree(tree)
                 tree_path = os.path.join(TREES_PATH, "trees-{}.json".format(count))
                 with open(tree_path, 'w') as tree_file:
-                    json.dump(tree_to_dict(tree), tree_file, indent=2)
+                    json.dump(tree_to_dict(tree), tree_file)
                     #tree_file.write(tree_to_json(tree))
                 count += 1        
 

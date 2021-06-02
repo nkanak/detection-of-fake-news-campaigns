@@ -35,24 +35,21 @@ def write_user_sets(output_dir, train_fnames, test_fnames, val_fnames):
         json.dump({
             "user_ids": list(train_user_ids)
         },
-        f,
-        indent=2)
+        f)
 
     path = os.path.join(output_dir, "test_user_ids.json")
     with open(path, "w") as f:
         json.dump({
             "user_ids": list(test_user_ids)
         },
-        f,
-        indent=2)
+        f)
 
     path = os.path.join(output_dir, "val_user_ids.json")
     with open(path, "w") as f:
         json.dump({
             "user_ids": list(val_user_ids)
         },
-        f,
-        indent=2)
+        f)
 
 def run(args):
     logging.info("Generating datasets for k-fold cross validation")

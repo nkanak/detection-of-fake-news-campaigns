@@ -112,7 +112,7 @@ def run(args):
         for i, index in enumerate(list(vertices.index)):
             embeddings_lookup[index] = embeddings[i].tolist()
     with open(os.path.join(args.dataset_root, 'users_graphsage_embeddings_lookup.json'), 'w') as f:
-        json.dump(embeddings_lookup, f, indent=2)
+        json.dump(embeddings_lookup, f)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
