@@ -8,3 +8,7 @@ vertices.pkl
 hold_out_edges_df.pkl
 hold_out_vertices_df.pkl
 users_embedding_*/
+missing_user_profiles/
+__pycache__
+tweets1/
+trees2/
