@@ -4,6 +4,13 @@
 # See https://stellargraph.readthedocs.io/en/latest/demos/node-classification/graphsage-inductive-node-classification.html
 #
 
+# For the balance of the datasets check:
+# https://scikit-learn.org/stable/modules/generated/sklearn.utils.class_weight.compute_class_weight.html
+# https://stackoverflow.com/questions/44716150/how-can-i-assign-a-class-weight-in-keras-in-a-simple-way/44721883
+# https://datascience.stackexchange.com/questions/13490/how-to-set-class-weights-for-imbalanced-classes-in-keras
+# https://stackoverflow.com/questions/44560549/unbalanced-data-and-weighted-cross-entropy
+# https://elitedatascience.com/imbalanced-classes
+
 import argparse
 from stellargraph import StellarGraph
 from stellargraph.mapper import GraphSAGENodeGenerator
@@ -14,6 +21,7 @@ import utils
 import tensorflow
 import os
 import json
+from sklearn.utils import class_weight
 
 
 def infer(embedding_model, vertices_df, edges_df, batch_size, num_samples):
@@ -32,6 +40,7 @@ def run(args):
     train_vertices_df = utils.read_pickle_from_file(os.path.join(args.dataset_root, "train_vertices.pkl"))
     train_vertices_df.drop(['id'], inplace=True, axis=1)
     train_labels = utils.create_user_labels_df(list(train_vertices_df.index), user_labels_dir)['label']
+
     print('###### Total train labels value counts')
     print(train_labels.value_counts())
 
@@ -51,6 +60,13 @@ def run(args):
 
     target_encoding = preprocessing.LabelBinarizer()
     train_targets = target_encoding.fit_transform(train_labels)
+    print('###### class weights ######')
+    weights_sklearn = class_weight.compute_class_weight(class_weight='balanced', classes=[0, 1], y=[i[0] for i in train_targets])
+    weights = {
+        0: weights_sklearn[0],
+        1: weights_sklearn[1]
+    }
+    print(weights)
     val_targets = target_encoding.transform(val_labels)
     test_targets = target_encoding.transform(test_labels)
 
@@ -90,7 +106,7 @@ def run(args):
     val_generator = GraphSAGENodeGenerator(val_graph, batch_size, num_samples)
     val_gen = val_generator.flow(val_labels.index, val_targets)
     history = model.fit(
-        train_gen, epochs=args.epochs, validation_data=val_gen, verbose=1, shuffle=False
+        train_gen, epochs=args.epochs, validation_data=val_gen, verbose=1, shuffle=False, class_weight=weights
     )
 
     test_graph = StellarGraph(test_vertices_df, test_edges_df, edge_type_default='follows', node_type_default='user')
