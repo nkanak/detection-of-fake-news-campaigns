@@ -62,3 +62,26 @@ which will create a folder `trees2`.
 * Run `user_to_graph.py` script file (e.g. `python users_to_graph.py --input-dir ../raw_data --embeddings-file ../raw_data/glove.twitter.27B/glove.twitter.27B.200d.txt`)
 * Run `train_graphsage.py` script file (e.g. `python train_graphsage.py --user-labels-dir ../raw_data/user_labels`)
 
+
+# How to run the whole process
+Step 1.
+Connect to the hua server (10.100.54.29) and execute the following commands:
+```
+cd astroturfing/fakenews
+./run.sh
+```
+
+Step 2. When the above script pauses its execution, run the following commands locally:
+```
+./download_graphsage_data.sh
+./run_graphsage.sh
+./upload_graphsage_produce_data.sh
+```
+
+Step 3. When the above scripts finish their execution, go to the hua server and continue the execution of the script.
+
+Step 4. When the script of the hua server finishes its execution, run the following commands locally:
+```
+./download_gat_data.sh
+./run_gat.sh
+```
