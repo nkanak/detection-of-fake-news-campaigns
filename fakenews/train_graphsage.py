@@ -22,6 +22,8 @@ import tensorflow
 import os
 import json
 from sklearn.utils import class_weight
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
 
 
 def infer(embedding_model, vertices_df, edges_df, batch_size, num_samples):
@@ -39,7 +41,10 @@ def run(args):
     train_edges_df = utils.read_pickle_from_file(os.path.join(args.dataset_root, "train_edges.pkl"))
     train_vertices_df = utils.read_pickle_from_file(os.path.join(args.dataset_root, "train_vertices.pkl"))
     train_vertices_df.drop(['id'], inplace=True, axis=1)
+    #train_vertices_df[:] = 0.029722
     train_labels = utils.create_user_labels_df(list(train_vertices_df.index), user_labels_dir)['label']
+
+    utils.write_object_to_pickle_file('train_labels.pkl', train_labels)
 
     print('###### Total train labels value counts')
     print(train_labels.value_counts())
@@ -47,26 +52,34 @@ def run(args):
     val_edges_df = utils.read_pickle_from_file(os.path.join(args.dataset_root, "val_edges.pkl"))
     val_vertices_df = utils.read_pickle_from_file(os.path.join(args.dataset_root, "val_vertices.pkl"))
     val_vertices_df.drop(['id'], inplace=True, axis=1)
+    #val_vertices_df[:] = 0.029722
     val_labels = utils.create_user_labels_df(list(val_vertices_df.index), user_labels_dir)['label']
+
+    utils.write_object_to_pickle_file('val_labels.pkl', val_labels)
+
     print('###### Total val labels value counts')
     print(val_labels.value_counts())
 
     test_edges_df = utils.read_pickle_from_file(os.path.join(args.dataset_root, "test_edges.pkl"))
     test_vertices_df = utils.read_pickle_from_file(os.path.join(args.dataset_root, "test_vertices.pkl"))
     test_vertices_df.drop(['id'], inplace=True, axis=1)
+    #test_vertices_df[:] = 0.029722
     test_labels = utils.create_user_labels_df(list(test_vertices_df.index), user_labels_dir)['label']
+
+    utils.write_object_to_pickle_file('test_labels.pkl', test_labels)
+
     print('###### Total test labels value counts')
     print(test_labels.value_counts())
 
     target_encoding = preprocessing.LabelBinarizer()
     train_targets = target_encoding.fit_transform(train_labels)
-    print('###### class weights ######')
-    weights_sklearn = class_weight.compute_class_weight(class_weight='balanced', classes=[0, 1], y=[i[0] for i in train_targets])
-    weights = {
-        0: weights_sklearn[0],
-        1: weights_sklearn[1]
-    }
-    print(weights)
+    # print('###### class weights ######')
+    # weights_sklearn = class_weight.compute_class_weight(class_weight='balanced', classes=[0, 1], y=[i[0] for i in train_targets])
+    # weights = {
+    #     0: weights_sklearn[0],
+    #     1: weights_sklearn[1]
+    # }
+    # print(weights)
     val_targets = target_encoding.transform(val_labels)
     test_targets = target_encoding.transform(test_labels)
 
@@ -74,7 +87,7 @@ def run(args):
     print(train_graph.info())
 
     batch_size = 100
-    num_samples = [20, 10]
+    num_samples = [15, 10]
     train_generator = GraphSAGENodeGenerator(train_graph, batch_size, num_samples)
     train_gen = train_generator.flow(list(train_labels.index), train_targets, shuffle=True)
 
@@ -97,7 +110,8 @@ def run(args):
     print(prediction.shape)
     model = Model(inputs=x_inp, outputs=prediction)
     model.compile(
-        optimizer=optimizers.Adam(lr=0.001),
+        #optimizer=optimizers.Adam(lr=0.001),
+        optimizer=optimizers.SGD(lr=0.001),
         loss=loss,
         metrics=metrics,
     )
@@ -106,7 +120,8 @@ def run(args):
     val_generator = GraphSAGENodeGenerator(val_graph, batch_size, num_samples)
     val_gen = val_generator.flow(val_labels.index, val_targets)
     history = model.fit(
-        train_gen, epochs=args.epochs, validation_data=val_gen, verbose=1, shuffle=False, class_weight=weights
+        #train_gen, epochs=args.epochs, validation_data=val_gen, verbose=1, shuffle=False, class_weight=weights
+        train_gen, epochs=args.epochs, validation_data=val_gen, verbose=1, shuffle=False
     )
 
     test_graph = StellarGraph(test_vertices_df, test_edges_df, edge_type_default='follows', node_type_default='user')
@@ -116,11 +131,18 @@ def run(args):
     for name, val in zip(model.metrics_names, test_metrics):
         print("\t{}: {:0.4f}".format(name, val))
 
+    print(test_labels.to_numpy())
+    print(target_encoding.inverse_transform(model.predict(test_gen)))
+    cm = confusion_matrix(test_labels.to_numpy(), target_encoding.inverse_transform(model.predict(test_gen)))
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['non-astroturfer', 'astroturfer'])
+    disp.plot()
+    plt.show()
+
     embedding_model_filename = 'users_embedding_%s_%s_model' % (batch_size, '_'.join([str(i) for i in num_samples]))
     print('Saving embedding_model: %s' % (embedding_model_filename))
     embedding_model = Model(inputs=x_inp, outputs=x_out)
     embedding_model.save(embedding_model_filename)
-
+    
     print('Saving users embeddings lookup file')
     embeddings_lookup = {}
     for vertices, edges in [(train_vertices_df, train_edges_df), (val_vertices_df, val_edges_df), (test_vertices_df, test_edges_df)]:

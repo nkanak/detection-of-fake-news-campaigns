@@ -30,6 +30,25 @@ def strip_user_profile(user_profile:Dict, embedder: embeddings.UserEmbedder) -> 
         user['embedding_%s' % (i)] = dimension_value
     return user
 
+#def strip_user_profile(user_profile:Dict, embedder: embeddings.UserEmbedder) -> Dict:
+#    user = {}
+#    if 'done' in user_profile and user_profile['done'] !=  'OK':
+#        user['id'] = int(user_profile['user_id'])
+#    else:
+#        user['id'] = user_profile['id']
+#
+#    user['protected'] = user_profile.get('protected', None)
+#    user['followers_count'] = user_profile.get('followers_count', None)
+#    user['friends_count'] = user_profile.get('friends_count', None)
+#    user['listed_count'] = user_profile.get('listed_count', None)
+#    user['favourites_count'] = user_profile.get('favourites_count', None)
+#    user['verified'] = user_profile.get('verified', None)
+#    user['statuses_count'] = user_profile.get('statuses_count', None)
+#    user['has_extended_profile'] = user_profile.get('has_extended_profile', None)
+#    user['geo_enabled'] = user_profile.get('geo_enabled', None)
+#
+#    return user
+
 def build_graphs():
     with open(os.path.join(args.dataset_root, "train_user_ids.json")) as f:
         train_user_ids = json.load(f)["user_ids"]
@@ -105,7 +124,9 @@ def build_initial_graph(node_ids):
     )
 
     length = len(list(os.scandir(user_profiles_path)))
-    for fentry in tqdm(os.scandir(user_profiles_path), total=length):
+    pbar = tqdm(os.scandir(user_profiles_path), total=length)
+    for fentry in pbar:
+        pbar.set_description('File:%s'%(fentry.path))
         if fentry.path.endswith(".json") and fentry.is_file():
             with open(fentry.path) as json_file:
                 user_profile = json.load(json_file)
@@ -117,7 +138,9 @@ def build_initial_graph(node_ids):
                 g.vertex_attrs[v].update(**user)
 
     length = len(list(os.scandir(user_followers_path)))
-    for fentry in tqdm(os.scandir(user_followers_path), total=length):
+    pbar = tqdm(os.scandir(user_followers_path), total=length)
+    for fentry in pbar:
+        pbar.set_description('File: %s'%(fentry.path))
         if fentry.path.endswith(".json") and fentry.is_file():
             with open(fentry.path) as json_file:
                 user_followers = json.load(json_file)
@@ -126,7 +149,7 @@ def build_initial_graph(node_ids):
                     continue
 
                 if g.contains_vertex(user_followers["user_id"]) is False:
-                    #continue
+                    continue
                     user_profile = {"id": user_followers["user_id"], "description": ""}
                     user = strip_user_profile(user_profile, embedder)
                     v = g.add_vertex(user["id"])
@@ -137,7 +160,7 @@ def build_initial_graph(node_ids):
                         continue
 
                     if g.contains_vertex(follower) is False:
-                        #continue
+                        continue
                         user_profile = {"id": follower, "description": ""}
                         user = strip_user_profile(user_profile, embedder)
                         v = g.add_vertex(user["id"])
